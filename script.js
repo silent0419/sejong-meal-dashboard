@@ -9,6 +9,10 @@
     doughnut: ["#667eea", "#764ba2", "#f093fb"],
   };
 
+  const chartRefs = { line: null, doughnut: null, bar: null, hbar: null, radar: null };
+
+  let bundle = null;
+
   function kcalFromMacros(row) {
     return 4 * row.carb + 4 * row.protein + 9 * row.fat;
   }
@@ -68,10 +72,33 @@
     return todayIso > maxIso ? maxIso : todayIso;
   }
 
+  function pickSchool(rows, school) {
+    if (!school) return rows;
+    return rows.filter((r) => r.school === school);
+  }
+
   async function loadData() {
     const r = await fetch("data.json", { cache: "no-store" });
     if (!r.ok) throw new Error("data.json을 불러올 수 없습니다.");
     return r.json();
+  }
+
+  function destroyCharts() {
+    Object.keys(chartRefs).forEach((k) => {
+      if (chartRefs[k]) {
+        chartRefs[k].destroy();
+        chartRefs[k] = null;
+      }
+    });
+  }
+
+  function getSelectedSchool() {
+    const v = document.getElementById("school-select").value;
+    return v === "" ? null : v;
+  }
+
+  function schoolScopeLabel(school) {
+    return school || "전체 학교 평균";
   }
 
   function fillSummary({
@@ -81,18 +108,25 @@
     waste,
     favorite,
     referenceIso,
+    school,
   }) {
-    const refNutrition = nutrition.filter((n) => n.date === referenceIso);
+    const scope = schoolScopeLabel(school);
+    const refNutrition = pickSchool(nutrition, school).filter(
+      (n) => n.date === referenceIso
+    );
     const calorieHintEl = document.getElementById("card-calorie-hint");
     if (refNutrition.length) {
       const avg =
         refNutrition.reduce((s, n) => s + kcalFromMacros(n), 0) / refNutrition.length;
       document.getElementById("card-calorie").textContent =
         `${Math.round(avg).toLocaleString("ko-KR")} kcal`;
-      calorieHintEl.textContent = `기준일: ${formatDateLabel(referenceIso)} (교당 평균)`;
+      calorieHintEl.textContent = school
+        ? `기준일: ${formatDateLabel(referenceIso)} · ${school}`
+        : `기준일: ${formatDateLabel(referenceIso)} (${scope})`;
     } else {
+      const cal = pickSchool(calorie, school);
       const byMonth = {};
-      calorie.forEach((c) => {
+      cal.forEach((c) => {
         if (!byMonth[c.month]) byMonth[c.month] = [];
         byMonth[c.month].push(c.avg_calorie);
       });
@@ -105,18 +139,19 @@
         ? `${Math.round(avgLast).toLocaleString("ko-KR")} kcal`
         : "—";
       calorieHintEl.textContent = lastM
-        ? `해당일 영양 데이터 없음 · 월 평균 (${formatMonthLabel(lastM)})`
+        ? `해당일 영양 데이터 없음 · 월 평균 (${formatMonthLabel(lastM)}) · ${scope}`
         : "데이터 없음";
     }
 
     const today = new Date();
     const ymNow = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const wAll = pickSchool(waste, school);
     let wasteMonth = ymNow;
-    let wasteRows = waste.filter((w) => w.month === ymNow);
+    let wasteRows = wAll.filter((w) => w.month === ymNow);
     if (!wasteRows.length) {
-      const months = [...new Set(waste.map((w) => w.month))].sort();
+      const months = [...new Set(wAll.map((w) => w.month))].sort();
       wasteMonth = months[months.length - 1];
-      wasteRows = waste.filter((w) => w.month === wasteMonth);
+      wasteRows = wAll.filter((w) => w.month === wasteMonth);
     }
     if (wasteRows.length) {
       const avgW =
@@ -124,25 +159,38 @@
       document.getElementById("card-waste").textContent = `${avgW.toFixed(1)} g/인`;
       document.getElementById("card-waste-hint").textContent =
         wasteMonth === ymNow
-          ? `${formatMonthLabel(wasteMonth)} · 교당 평균`
-          : `최근 데이터: ${formatMonthLabel(wasteMonth)} (교당 평균)`;
+          ? `${formatMonthLabel(wasteMonth)} · ${scope}`
+          : `최근 데이터: ${formatMonthLabel(wasteMonth)} · ${scope}`;
     } else {
       document.getElementById("card-waste").textContent = "—";
       document.getElementById("card-waste-hint").textContent = "";
     }
 
-    const uniqueDays = new Set(menu.map((m) => m.date)).size;
+    const menuF = pickSchool(menu, school);
+    const uniqueDays = new Set(menuF.map((m) => m.date)).size;
     document.getElementById("card-meal-days").textContent =
       uniqueDays.toLocaleString("ko-KR");
+    document.getElementById("card-meal-days-hint").textContent = school
+      ? `${school} 급식이 있는 고유 일수`
+      : "전체 학교 통합 기준 고유 일자";
 
+    const favF = pickSchool(favorite, school);
     let top = null;
-    favorite.forEach((f) => {
-      if (!top || f.score > top.score) top = f;
-    });
+    if (school) {
+      top = favF.find((f) => f.rank === 1) || null;
+      if (!top && favF.length) {
+        top = [...favF].sort((a, b) => b.score - a.score)[0];
+      }
+    } else {
+      favorite.forEach((f) => {
+        if (!top || f.score > top.score) top = f;
+      });
+    }
     if (top) {
       document.getElementById("card-favorite").textContent = top.menu;
-      document.getElementById("card-favorite-hint").textContent =
-        `선호도 점수 ${top.score.toFixed(1)}점 · ${top.school}`;
+      document.getElementById("card-favorite-hint").textContent = school
+        ? `선호도 ${top.score.toFixed(1)}점 · ${school}`
+        : `선호도 점수 ${top.score.toFixed(1)}점 · ${top.school}`;
     } else {
       document.getElementById("card-favorite").textContent = "—";
       document.getElementById("card-favorite-hint").textContent = "";
@@ -192,7 +240,7 @@
     };
   }
 
-  function buildLineChartCalorie(calorie) {
+  function buildLineChartCalorie(calorie, lineLabel) {
     const byMonth = {};
     calorie.forEach((c) => {
       if (!byMonth[c.month]) byMonth[c.month] = [];
@@ -210,13 +258,13 @@
     gradient.addColorStop(0, "rgba(102, 126, 234, 0.45)");
     gradient.addColorStop(1, "rgba(240, 147, 251, 0.05)");
     const lnOpts = chartOptions(false);
-    return new Chart(ctx, {
+    chartRefs.line = new Chart(ctx, {
       type: "line",
       data: {
         labels,
         datasets: [
           {
-            label: "교당 월 평균 칼로리",
+            label: lineLabel,
             data: values,
             tension: 0.45,
             fill: true,
@@ -259,7 +307,7 @@
       fat += n.fat;
     });
     const ctx = document.getElementById("chart-macro-doughnut");
-    return new Chart(ctx, {
+    chartRefs.doughnut = new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: ["탄수화물 (g)", "단백질 (g)", "지방 (g)"],
@@ -295,7 +343,7 @@
     );
     const ctx = document.getElementById("chart-waste-bar");
     const baseOpts = chartOptions(false);
-    return new Chart(ctx, {
+    chartRefs.bar = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
@@ -344,20 +392,31 @@
     });
   }
 
-  function buildHorizontalFavorite(favorite) {
-    const best = new Map();
-    favorite.forEach((f) => {
-      const prev = best.get(f.menu);
-      if (!prev || f.score > prev.score) best.set(f.menu, f);
-    });
-    const sorted = [...best.entries()]
-      .sort((a, b) => b[1].score - a[1].score)
-      .slice(0, 10);
-    const labels = sorted.map(([name]) => name).reverse();
-    const data = sorted.map(([, v]) => v.score).reverse();
+  function buildHorizontalFavorite(favorite, school) {
+    let labels;
+    let data;
+    if (school) {
+      const rows = favorite
+        .filter((f) => f.school === school)
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, 10);
+      labels = rows.map((r) => r.menu).reverse();
+      data = rows.map((r) => r.score).reverse();
+    } else {
+      const best = new Map();
+      favorite.forEach((f) => {
+        const prev = best.get(f.menu);
+        if (!prev || f.score > prev.score) best.set(f.menu, f);
+      });
+      const sorted = [...best.entries()]
+        .sort((a, b) => b[1].score - a[1].score)
+        .slice(0, 10);
+      labels = sorted.map(([name]) => name).reverse();
+      data = sorted.map(([, v]) => v.score).reverse();
+    }
     const ctx = document.getElementById("chart-favorite-hbar");
     const hbOpts = chartOptions(false);
-    return new Chart(ctx, {
+    chartRefs.hbar = new Chart(ctx, {
       type: "bar",
       data: {
         labels,
@@ -404,7 +463,7 @@
       sums[d].n ? Math.round(sums[d].sum / sums[d].n) : 0
     );
     const ctx = document.getElementById("chart-weekday-radar");
-    return new Chart(ctx, {
+    chartRefs.radar = new Chart(ctx, {
       type: "radar",
       data: {
         labels: labels.map((d) => `${d}요일`),
@@ -441,17 +500,42 @@
     });
   }
 
-  function fillWeekTable(menu, referenceIso) {
-    const schools = ["세종초", "세종중", "세종고"];
+  function fillWeekTable(menu, referenceIso, school, allSchools) {
+    const schools = school ? [school] : allSchools;
     const refDate = new Date(referenceIso + "T12:00:00");
     const monday = getMonday(refDate);
     const note = document.getElementById("week-table-note");
-    note.textContent = `기준 주간: ${formatDateLabel(toISODate(monday))}부터 (데이터 있는 일자만 표시)`;
+    const scope = school ? `${school}만` : "전체 학교";
+    note.textContent = `기준 주간: ${formatDateLabel(toISODate(monday))}부터 · ${scope}`;
 
     const byKey = new Map();
     menu.forEach((m) => {
       byKey.set(`${m.date}|${m.school}`, m.menu);
     });
+
+    const thead = document.getElementById("week-meal-thead");
+    thead.innerHTML = "";
+    const headTr = document.createElement("tr");
+    ["날짜", "요일"].forEach((text) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = text;
+      headTr.appendChild(th);
+    });
+    if (school) {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = "식단";
+      headTr.appendChild(th);
+    } else {
+      schools.forEach((name) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = name;
+        headTr.appendChild(th);
+      });
+    }
+    thead.appendChild(headTr);
 
     const tbody = document.getElementById("week-meal-body");
     tbody.innerHTML = "";
@@ -469,9 +553,9 @@
       tdDay.textContent = `${dayChar}요일`;
       tr.appendChild(tdDay);
 
-      schools.forEach((school) => {
+      schools.forEach((sch) => {
         const td = document.createElement("td");
-        const items = byKey.get(`${iso}|${school}`);
+        const items = byKey.get(`${iso}|${sch}`);
         if (items && items.length) {
           const ul = document.createElement("ul");
           ul.className = "meal-menu-list";
@@ -517,6 +601,68 @@
     }
   }
 
+  function populateSchoolSelect(schools) {
+    const sel = document.getElementById("school-select");
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "전체 학교 평균";
+    sel.appendChild(optAll);
+    schools.forEach((name) => {
+      const o = document.createElement("option");
+      o.value = name;
+      o.textContent = name;
+      sel.appendChild(o);
+    });
+    const saved = localStorage.getItem("meal-dash-school");
+    if (saved !== null && (saved === "" || schools.includes(saved))) {
+      sel.value = saved;
+    }
+    sel.addEventListener("change", () => {
+      localStorage.setItem("meal-dash-school", sel.value);
+      renderDashboard();
+    });
+  }
+
+  function renderDashboard() {
+    if (!bundle) return;
+    const school = getSelectedSchool();
+    const meta = bundle.meta || {};
+    const allSchools = meta.schools || ["세종초", "세종중", "세종고"];
+
+    const menu = pickSchool(bundle.menu || [], school);
+    const nutrition = pickSchool(bundle.nutrition || [], school);
+    const calorie = pickSchool(bundle.calorie || [], school);
+    const waste = pickSchool(bundle.waste || [], school);
+    const favorite = pickSchool(bundle.favorite || [], school);
+
+    const maxIso = maxMenuDate(menu);
+    const todayIso = toISODate(new Date());
+    const referenceIso = clipDateForData(todayIso, maxIso);
+
+    fillSummary({
+      menu,
+      nutrition,
+      calorie,
+      waste,
+      favorite,
+      referenceIso,
+      school,
+    });
+
+    fillWeekTable(menu, referenceIso, school, allSchools);
+
+    destroyCharts();
+    const lineLabel = school
+      ? `${school} 월 평균 칼로리`
+      : "전체 학교 월 평균 칼로리";
+    buildLineChartCalorie(calorie, lineLabel);
+    buildDoughnutNutrition(nutrition);
+    buildBarWaste(waste);
+    buildHorizontalFavorite(bundle.favorite || [], school);
+    buildRadarWeekday(nutrition);
+  }
+
   async function main() {
     initTheme();
     document.getElementById("header-date").textContent = new Intl.DateTimeFormat(
@@ -526,37 +672,16 @@
 
     try {
       const data = await loadData();
+      bundle = data;
       const meta = data.meta || {};
-      const menu = data.menu || [];
-      const nutrition = data.nutrition || [];
-      const calorie = data.calorie || [];
-      const waste = data.waste || [];
-      const favorite = data.favorite || [];
+      const allSchools = meta.schools || ["세종초", "세종중", "세종고"];
 
       const title = meta.title || "세종시교육청 급식 대시보드";
       document.getElementById("dashboard-title").textContent = title;
       document.title = title;
 
-      const maxIso = maxMenuDate(menu);
-      const todayIso = toISODate(new Date());
-      const referenceIso = clipDateForData(todayIso, maxIso);
-
-      fillSummary({
-        menu,
-        nutrition,
-        calorie,
-        waste,
-        favorite,
-        referenceIso,
-      });
-
-      fillWeekTable(menu, referenceIso);
-
-      buildLineChartCalorie(calorie);
-      buildDoughnutNutrition(nutrition);
-      buildBarWaste(waste);
-      buildHorizontalFavorite(favorite);
-      buildRadarWeekday(nutrition);
+      populateSchoolSelect(allSchools);
+      renderDashboard();
     } catch (e) {
       const mainEl = document.querySelector("main.container");
       if (mainEl) {

@@ -15,10 +15,16 @@
         <h1 id="dashboard-title">세종시교육청 급식 대시보드</h1>
         <p class="header-date" id="header-date"></p>
       </div>
+      <div class="header-controls">
+        <div class="school-bar">
+          <label for="school-select" class="school-bar__label">학교</label>
+          <select id="school-select" class="school-bar__select" aria-label="학교 선택"></select>
+        </div>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="다크 모드 전환">
         <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
         <span class="theme-toggle__label">다크 모드</span>
       </button>
+      </div>
     </div>
   </header>
 
@@ -84,15 +90,7 @@
       <p class="table-note" id="week-table-note"></p>
       <div class="table-scroll">
         <table class="meal-table" id="week-meal-table">
-          <thead>
-            <tr>
-              <th scope="col">날짜</th>
-              <th scope="col">요일</th>
-              <th scope="col">세종초</th>
-              <th scope="col">세종중</th>
-              <th scope="col">세종고</th>
-            </tr>
-          </thead>
+          <thead id="week-meal-thead"></thead>
           <tbody id="week-meal-body"></tbody>
         </table>
       </div>
