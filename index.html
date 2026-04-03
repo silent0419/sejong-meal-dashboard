@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>세종시교육청 급식 대시보드</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-text">
+        <h1 id="dashboard-title">세종시교육청 급식 대시보드</h1>
+        <p class="header-date" id="header-date"></p>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="다크 모드 전환">
+        <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+        <span class="theme-toggle__label">다크 모드</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="summary" aria-label="요약 지표">
+      <article class="card card--summary">
+        <h2>오늘의 칼로리</h2>
+        <p class="card__value" id="card-calorie">—</p>
+        <p class="card__hint" id="card-calorie-hint"></p>
+      </article>
+      <article class="card card--summary">
+        <h2>이번 달 평균 잔반량</h2>
+        <p class="card__value" id="card-waste">—</p>
+        <p class="card__hint" id="card-waste-hint"></p>
+      </article>
+      <article class="card card--summary">
+        <h2>총 급식일수</h2>
+        <p class="card__value" id="card-meal-days">—</p>
+        <p class="card__hint" id="card-meal-days-hint">전체 기준 고유 일자</p>
+      </article>
+      <article class="card card--summary">
+        <h2>최고 인기메뉴</h2>
+        <p class="card__value card__value--title" id="card-favorite">—</p>
+        <p class="card__hint" id="card-favorite-hint"></p>
+      </article>
+    </section>
+
+    <section class="charts-grid" aria-label="차트">
+      <article class="card card--chart">
+        <h2>월별 평균 칼로리 추이</h2>
+        <div class="chart-wrap">
+          <canvas id="chart-calorie-line"></canvas>
+        </div>
+      </article>
+      <article class="card card--chart">
+        <h2>영양소 비율 (탄수화물 / 단백질 / 지방)</h2>
+        <div class="chart-wrap chart-wrap--doughnut">
+          <canvas id="chart-macro-doughnut"></canvas>
+        </div>
+      </article>
+      <article class="card card--chart">
+        <h2>월별 1인당 잔반량</h2>
+        <div class="chart-wrap">
+          <canvas id="chart-waste-bar"></canvas>
+        </div>
+      </article>
+      <article class="card card--chart">
+        <h2>선호 메뉴 TOP 10</h2>
+        <div class="chart-wrap chart-wrap--horizontal">
+          <canvas id="chart-favorite-hbar"></canvas>
+        </div>
+      </article>
+      <article class="card card--chart card--chart-wide">
+        <h2>요일별 평균 칼로리</h2>
+        <div class="chart-wrap chart-wrap--radar">
+          <canvas id="chart-weekday-radar"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="card card--table-block" aria-label="이번 주 식단">
+      <h2>이번 주 식단표</h2>
+      <p class="table-note" id="week-table-note"></p>
+      <div class="table-scroll">
+        <table class="meal-table" id="week-meal-table">
+          <thead>
+            <tr>
+              <th scope="col">날짜</th>
+              <th scope="col">요일</th>
+              <th scope="col">세종초</th>
+              <th scope="col">세종중</th>
+              <th scope="col">세종고</th>
+            </tr>
+          </thead>
+          <tbody id="week-meal-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>세종시교육청 급식 데이터 시각화 · Chart.js</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
