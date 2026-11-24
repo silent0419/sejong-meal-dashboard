@@ -1,0 +1,86 @@
+{
+ "generated": "2026-11-24",
+ "notice": "모든 데이터는 가상입니다.",
+ "schools": [
+  {
+   "id": "s01",
+   "name": "한별초등학교",
+   "level": "초",
+   "dong": "한솔동",
+   "students": 812,
+   "avgWastePerPersonG": 79.6
+  },
+  {
+   "id": "s02",
+   "name": "새빛초등학교",
+   "level": "초",
+   "dong": "도담동",
+   "students": 1043,
+   "avgWastePerPersonG": 105.6
+  },
+  {
+   "id": "s03",
+   "name": "누리초등학교",
+   "level": "초",
+   "dong": "고운동",
+   "students": 958,
+   "avgWastePerPersonG": 90.1
+  },
+  {
+   "id": "s04",
+   "name": "가온초등학교",
+   "level": "초",
+   "dong": "조치원읍",
+   "students": 421,
+   "avgWastePerPersonG": 106.7
+  },
+  {
+   "id": "s05",
+   "name": "다솜중학교",
+   "level": "중",
+   "dong": "아름동",
+   "students": 735,
+   "avgWastePerPersonG": 105.0
+  },
+  {
+   "id": "s06",
+   "name": "푸른솔중학교",
+   "level": "중",
+   "dong": "종촌동",
+   "students": 668,
+   "avgWastePerPersonG": 88.6
+  },
+  {
+   "id": "s07",
+   "name": "해오름중학교",
+   "level": "중",
+   "dong": "새롬동",
+   "students": 902,
+   "avgWastePerPersonG": 89.0
+  },
+  {
+   "id": "s08",
+   "name": "미르고등학교",
+   "level": "고",
+   "dong": "보람동",
+   "students": 846,
+   "avgWastePerPersonG": 126.8
+  },
+  {
+   "id": "s09",
+   "name": "온누리고등학교",
+   "level": "고",
+   "dong": "반곡동",
+   "students": 777,
+   "avgWastePerPersonG": 108.9
+  },
+  {
+   "id": "s10",
+   "name": "나래고등학교",
+   "level": "고",
+   "dong": "다정동",
+   "students": 591,
+   "avgWastePerPersonG": 139.8
+  }
+ ]
+}

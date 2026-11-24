@@ -1,0 +1,138 @@
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #6e6c67;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --other: #c3c2b7;
+  --accent-wash: rgba(42,120,214,0.10);
+  --good: #006300; --bad: #c0392b; --warn-bg: #fff4d6;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text-2: #c3c2b7; --muted: #9a988f;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --other: #4a4946;
+    --accent-wash: rgba(57,135,229,0.18); --good: #0ca30c; --bad: #ff7b6b; --warn-bg: #3a3014;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text-2: #c3c2b7; --muted: #9a988f;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --other: #4a4946;
+  --accent-wash: rgba(57,135,229,0.18); --good: #0ca30c; --bad: #ff7b6b; --warn-bg: #3a3014;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-size: 15px; line-height: 1.5;
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+h1 { font-size: 1.35rem; margin: 0; }
+h2 { font-size: 1.02rem; margin: 0; }
+.sub { margin: 2px 0 0; color: var(--text-2); font-size: .9rem; }
+.badge { display: inline-block; font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--warn-bg); color: var(--text); margin-left: 4px; }
+.muted { color: var(--muted); font-size: .85rem; }
+button.ghost { white-space: nowrap; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+button.ghost:hover { background: var(--accent-wash); }
+
+.filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; margin: 18px 0 14px; }
+.filters label { display: flex; flex-direction: column; font-size: .8rem; color: var(--text-2); gap: 4px; }
+select { font: inherit; font-size: 1rem; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-width: 140px; }
+#schoolSel { min-width: 220px; }
+.school-info { color: var(--text-2); font-size: .9rem; padding-bottom: 8px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.kpi .label { color: var(--text-2); font-size: .82rem; }
+.kpi .value { font-size: 1.7rem; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.25; margin-top: 2px; }
+.kpi .value small { font-size: .9rem; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+.kpi .delta { font-size: .82rem; margin-top: 2px; color: var(--text-2); }
+.delta.good { color: var(--good); } .delta.bad { color: var(--bad); }
+
+.grid { display: grid; gap: 14px; margin-bottom: 14px; }
+.grid.two { grid-template-columns: 1fr 1fr; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; min-width: 0; }
+.card-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.mini { font-size: .88rem; color: var(--text-2); margin: 16px 0 8px; font-weight: 600; }
+.chart-box { position: relative; height: 260px; }
+.chart-box.tall { height: 300px; }
+
+/* 달력 */
+.cal-head, .calendar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cal-head span { text-align: center; font-size: .8rem; color: var(--muted); padding-bottom: 4px; }
+.day { border: 1px solid var(--border); border-radius: 8px; padding: 6px 7px; min-height: 84px; background: transparent; color: var(--text); text-align: left; font: inherit; font-size: .74rem; cursor: pointer; overflow: hidden; }
+.day:hover { background: var(--accent-wash); }
+.day.sel { outline: 2px solid var(--s1); outline-offset: -1px; background: var(--accent-wash); }
+.day.empty { cursor: default; background: transparent; border-style: dashed; color: var(--muted); }
+.day.blank { visibility: hidden; }
+.day .d { font-weight: 700; font-size: .82rem; display: flex; justify-content: space-between; }
+.day .d .k { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.day .m { color: var(--text-2); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 일일 식단 */
+.menu-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.menu-list li { padding: 6px 0; border-bottom: 1px solid var(--grid); }
+.menu-list .alg { color: var(--muted); font-size: .75rem; margin-left: 4px; }
+.foot { margin: 12px 0 0; font-size: .75rem; }
+
+/* 영양소 막대 */
+.nut-bars { display: grid; gap: 9px; }
+.nut-row { display: grid; grid-template-columns: 70px 1fr 140px; align-items: center; gap: 10px; font-size: .85rem; }
+.nut-row .name { color: var(--text-2); }
+.nut-row .num { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.track { position: relative; height: 12px; background: var(--grid); border-radius: 4px; }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--s1); border-radius: 0 4px 4px 0; }
+.mark100 { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .55; }
+.nut-row .num .low { color: var(--bad); }
+
+.mix-bar { display: flex; height: 22px; gap: 2px; border-radius: 4px; overflow: hidden; }
+.mix-bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: .82rem; color: var(--text-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* 선호메뉴 */
+.pref-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.pref-list li { display: grid; grid-template-columns: 26px 110px 1fr 70px; align-items: center; gap: 8px; font-size: .88rem; }
+.pref-list .rk { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.pref-list li:first-child .rk { color: var(--text); font-weight: 700; }
+.pref-list .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+details { margin-top: 10px; font-size: .85rem; }
+summary { cursor: pointer; color: var(--text-2); }
+.tbl-wrap { overflow-x: auto; max-height: 260px; margin-top: 8px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+
+.page-foot { padding: 10px 0 36px; line-height: 1.6; }
+.tooltip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,.15); border-radius: 8px; padding: 6px 10px; font-size: .82rem; }
+
+@media (max-width: 900px) {
+  .grid.two { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .kpi .value { font-size: 1.35rem; }
+  .day { min-height: 64px; padding: 4px; }
+  .day .d .k { display: none; }
+  .day .m { -webkit-line-clamp: 2; font-size: .68rem; }
+  .menu-list { grid-template-columns: 1fr; }
+  .pref-list li { grid-template-columns: 22px 92px 1fr 56px; }
+  .nut-row { grid-template-columns: 64px 1fr 92px; }
+  #schoolSel, select { min-width: 0; width: 100%; }
+  .filters label { flex: 1 1 140px; }
+}
