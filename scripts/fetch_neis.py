@@ -2,8 +2,9 @@
 
 실행:  NEIS_API_KEY=발급키 python3 scripts/fetch_neis.py
   - 인증키는 환경변수로만 받는다. (코드·저장소에 키를 적지 말 것)
-  - 대상 학교: config.json 의 "schools" 목록(학교코드). 비어 있으면 학교급별 이름순으로
-    급식 자료가 있는 학교를 perLevel 개씩 자동 선택하고 그 목록을 config.json 에 저장한다.
+  - 대상 학교: config.json 의 "target"
+      "all"  → 세종시 초·중·고 전체 (급식 자료가 없는 학교도 목록에 포함)
+      "list" → "schools" 에 적은 학교코드만
   - 학년도: config.json 의 schoolYear (예: 2026 → 2026-03-01 ~ 2027-02-28)
 
 NEIS에 없는 '월별 잔반량'과 '선호메뉴'는 학교코드로 고정된 난수를 써서 가상으로 만든다.
@@ -175,7 +176,7 @@ def virtual_extra(code, level, meals):
     avg_served = round(sum(m.get("served") or 0 for m in meals.values()) / max(len(meals), 1))
     respondents = int(avg_served * rnd.uniform(0.55, 0.8))
     tot = sum(weights.values()) or 1
-    top = sorted(weights.items(), key=lambda x: -x[1])[:10]
+    top = sorted(weights.items(), key=lambda x: -x[1])[:5]
     prefs = [{"rank": i + 1, "menu": n, "votes": round(w / tot * respondents * 2.2), "share": round(w / tot * 220, 1)}
              for i, (n, w) in enumerate(top)]
     return waste, {"surveyDate": "2026-10-15", "respondents": respondents,
@@ -184,25 +185,14 @@ def virtual_extra(code, level, meals):
 
 def main():
     cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
-    year, per_level = cfg["schoolYear"], cfg["perLevel"]
+    year = cfg["schoolYear"]
     info = {r["SD_SCHUL_CODE"]: r for r in api("schoolInfo") if r["SCHUL_KND_SC_NM"] in LEVELS}
     print(f"세종 초·중·고 {len(info)}곳 조회")
-
-    codes = [c for c in cfg.get("schools", []) if c in info]
+    if cfg.get("target", "all") == "all":
+        codes = [c for c, _ in sorted(info.items(), key=lambda x: (list(LEVELS).index(x[1]["SCHUL_KND_SC_NM"]), x[1]["SCHUL_NM"].strip()))]
+    else:
+        codes = [c for c in cfg.get("schools", []) if c in info]
     meals_cache = {}
-    if not codes:  # 자동 선택: 학교급별 이름순, 급식 자료가 있는 학교
-        for kind in LEVELS:
-            picked = 0
-            for c, r in sorted(info.items(), key=lambda x: x[1]["SCHUL_NM"]):
-                if r["SCHUL_KND_SC_NM"] != kind or picked >= per_level:
-                    continue
-                meals_cache[c] = fetch_meals(c, year)
-                if meals_cache[c]:
-                    codes.append(c)
-                    picked += 1
-        cfg["schools"] = codes
-        CONFIG.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"자동 선택 {len(codes)}곳 → config.json 저장")
 
     (DATA / "meals").mkdir(parents=True, exist_ok=True)
     index = []

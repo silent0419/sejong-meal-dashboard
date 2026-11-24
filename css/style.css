@@ -150,3 +150,19 @@ th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; backgroun
 .page-foot a { color: var(--s1); }
 .empty-note { padding: 24px; text-align: center; color: var(--muted); }
 .pref-list .pm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand img { height: 44px; width: auto; flex-shrink: 0; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.flabel { font-size: .8rem; color: var(--text-2); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: .95rem; padding: 8px 14px; border: 0; background: transparent; color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button:hover { background: var(--accent-wash); }
+.seg button[aria-checked="true"] { background: var(--s1); color: #fff; font-weight: 600; }
+@media (max-width: 520px) {
+  .brand img { height: 32px; }
+  .field { flex: 1 1 100%; }
+  .seg { width: 100%; }
+  .seg button { flex: 1; padding: 8px 4px; }
+}

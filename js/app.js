@@ -15,7 +15,7 @@
     "복숭아", "토마토", "아황산류", "호두", "닭고기", "쇠고기", "오징어", "조개류", "잣"];
   const MEAL_ORDER = ["조식", "중식", "석식"];
 
-  const state = { index: null, schools: [], school: null, month: null, day: null, mealType: null, cache: {}, charts: {} };
+  const state = { level: "", index: null, schools: [], school: null, month: null, day: null, mealType: null, cache: {}, charts: {} };
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const fmt = (n, d = 0) => (n == null || isNaN(n)) ? "-" :
     Number(n).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -40,6 +40,7 @@
     sel.innerHTML = "";
     let n = 0;
     ["초", "중", "고"].forEach((lv) => {
+      if (state.level && lv !== state.level) return;
       const list = state.schools.filter((s) => s.level === lv && match(s));
       if (!list.length) return;
       const g = document.createElement("optgroup");
@@ -48,6 +49,7 @@
       sel.append(g); n += list.length;
     });
     $("#schoolCount").textContent = kw ? `검색 ${n}곳` : `${n}곳`;
+    document.querySelectorAll("#levelSeg button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lv === state.level)));
     if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
     return n;
   }
@@ -63,11 +65,21 @@
       const n = fillSchoolSelect(e.target.value);
       if (n && sel.value !== state.school?.id) selectSchool(sel.value);
     });
+    document.querySelectorAll("#levelSeg button").forEach((b) => b.addEventListener("click", () => {
+      state.level = b.dataset.lv;
+      store.set("level", state.level);
+      const n = fillSchoolSelect($("#schoolSearch").value);
+      if (n && sel.value !== state.school?.id) selectSchool(sel.value);
+    }));
     $("#monthSel").addEventListener("change", (e) => { state.month = e.target.value; state.day = null; renderMonth(); });
     $("#themeBtn").addEventListener("click", toggleTheme);
 
     const urlId = new URLSearchParams(location.search).get("school");
     const startId = [urlId, store.get("school")].find((id) => state.schools.some((s) => s.id === id)) || state.schools[0].id;
+    const savedLv = store.get("level") || "";
+    const startLv = state.schools.find((s) => s.id === startId).level;
+    state.level = savedLv && savedLv !== startLv ? startLv : savedLv;
+    fillSchoolSelect();
     sel.value = startId;
     await selectSchool(startId);
   }
@@ -75,11 +87,15 @@
   async function selectSchool(id) {
     if (!state.cache[id]) state.cache[id] = await loadJSON(`data/meals/${id}.json`);
     state.school = state.cache[id];
+    if (state.level && state.level !== state.school.level) state.level = state.school.level;
     if ($("#schoolSel").value !== id) { $("#schoolSearch").value = ""; fillSchoolSelect(); $("#schoolSel").value = id; }
     store.set("school", id);
     const url = new URL(location.href); url.searchParams.set("school", id); history.replaceState(null, "", url);
 
     const months = [...new Set(Object.keys(state.school.meals).map((d) => d.slice(0, 7)))].sort();
+    const hasData = months.length > 0;
+    $("#noData").hidden = hasData;
+    $("#dataArea").hidden = !hasData;
     const ms = $("#monthSel");
     ms.innerHTML = "";
     months.forEach((m) => ms.append(new Option(`${m.slice(0, 4)}년 ${+m.slice(5)}월`, m)));
@@ -94,6 +110,7 @@
     $("#schoolInfo").innerHTML = `<strong>${esc(s.name)}</strong> · ${esc(s.address)} · ${esc(s.found)} · ${esc(s.coedu)}` +
       ` · 하루 평균 급식 ${fmt(s.avgServed)}명${home}`;
     document.querySelectorAll(".xsrc").forEach((el) => { el.outerHTML = xBadge().replace('class="src', 'class="xsrc src'); });
+    if (!hasData) { $("#monthSel").innerHTML = "<option>자료 없음</option>"; return; }
     renderMonth();
     renderPrefs();
     renderCompare();
@@ -304,20 +321,28 @@
   function renderPrefs() {
     const pr = state.school.preference, max = pr.top[0]?.votes || 1;
     $("#prefSub").textContent = `${pr.surveyDate} 설문 · 응답 ${fmt(pr.respondents)}명 · 복수응답`;
-    $("#prefList").innerHTML = pr.top.map((t) => `<li title="${esc(t.menu)}: ${fmt(t.votes)}표 (${fmt(t.share, 1)}%)">
+    $("#prefList").innerHTML = pr.top.slice(0, 5).map((t) => `<li title="${esc(t.menu)}: ${fmt(t.votes)}표 (${fmt(t.share, 1)}%)">
       <span class="rk">${t.rank}</span><span class="pm">${esc(t.menu)}</span>
       <span class="track"><span class="fill" style="width:${t.votes / max * 100}%"></span></span>
       <span class="num">${fmt(t.votes)}표</span></li>`).join("");
   }
 
   function renderCompare() {
-    const lv = state.school.level;
-    const list = state.schools.filter((s) => s.level === lv && s.avgWastePerPersonG != null)
+    const me = state.school, lv = me.level;
+    const meIdx = state.schools.find((s) => s.id === me.id);
+    // 같은 학교급에서 하루 평균 급식인원이 가장 가까운 9곳 + 선택 학교
+    const peers = state.schools.filter((s) => s.level === lv && s.id !== me.id && s.avgWastePerPersonG != null && s.avgServed)
+      .sort((a, b) => Math.abs(a.avgServed - me.avgServed) - Math.abs(b.avgServed - me.avgServed)).slice(0, 9);
+    const list = [meIdx, ...peers].filter((s) => s && s.avgWastePerPersonG != null)
       .sort((a, b) => a.avgWastePerPersonG - b.avgWastePerPersonG);
-    $("#compareTitle").textContent = `${LEVEL_NAME[lv]} ${list.length}곳 잔반량 비교`;
+    const served = peers.map((s) => s.avgServed);
+    $("#compareTitle").textContent = `규모가 비슷한 ${LEVEL_NAME[lv]} ${peers.length}곳과 잔반량 비교`;
+    $("#compareSub").textContent = served.length ? `기준: 하루 평균 급식인원 (이 학교 ${fmt(me.avgServed)}명 · 비교 학교 ${fmt(Math.min(...served))}~${fmt(Math.max(...served))}명) · 학년도 누적 1인 1끼 평균 (g)` : "";
+    const rank = list.findIndex((s) => s.id === me.id) + 1;
+    $("#compareSub").textContent += ` · 10곳 중 잔반 적은 순 ${rank}위`;
     const opts = baseOpts();
     opts.scales.x.ticks.autoSkip = false;
-    opts.scales.x.ticks.maxRotation = 60;
+    opts.scales.x.ticks.maxRotation = 45;
     opts.plugins.tooltip.callbacks = {
       title: (i) => list[i[0].dataIndex].name,
       label: (c) => `1인 1끼 평균 잔반 ${fmt(c.raw, 1)} g`,
@@ -327,11 +352,11 @@
     opts.onHover = (e, el) => { e.native.target.style.cursor = el.length ? "pointer" : "default"; };
     draw("compareChart", {
       type: "bar",
-      data: { labels: list.map((s) => shortName(s.name)),
+      data: { labels: list.map((s) => [shortName(s.name), `${fmt(s.avgServed)}명`]),
         datasets: [{ data: list.map((s) => s.avgWastePerPersonG),
           backgroundColor: list.map((s) => s.id === state.school.id ? css("--s1") : css("--other")),
           hoverBackgroundColor: css("--s1"),
-          borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 36 }] },
+          borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 48 }] },
       options: opts,
     });
   }

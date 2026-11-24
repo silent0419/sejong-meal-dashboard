@@ -14,9 +14,12 @@
 <body>
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <div>
+      <div class="brand">
+        <img id="logo" src="img/logo.png" alt="세종특별자치시교육청" onerror="this.remove()">
+        <div>
         <h1>세종 학교급식 대시보드</h1>
         <p class="sub" id="sourceLine">식단 · 영양 · 칼로리 · 잔반량 · 선호메뉴</p>
+        </div>
       </div>
       <button id="themeBtn" class="ghost" type="button" aria-label="화면 테마 전환">🌓 테마</button>
     </div>
@@ -24,6 +27,14 @@
 
   <main class="wrap">
     <section class="filters" aria-label="조회 조건">
+      <div class="field"><span class="flabel">학교급</span>
+        <div id="levelSeg" class="seg" role="radiogroup" aria-label="학교급 선택">
+          <button type="button" role="radio" data-lv="">전체</button>
+          <button type="button" role="radio" data-lv="초">초등</button>
+          <button type="button" role="radio" data-lv="중">중학교</button>
+          <button type="button" role="radio" data-lv="고">고등</button>
+        </div>
+      </div>
       <label>학교 검색
         <input id="schoolSearch" type="search" placeholder="예: 도담, 고등" autocomplete="off">
       </label>
@@ -36,6 +47,8 @@
       <div id="schoolInfo" class="school-info"></div>
     </section>
 
+    <p id="noData" class="card empty-note" hidden>이 학교는 아직 NEIS에 등록된 급식 자료가 없습니다.</p>
+    <div id="dataArea">
     <section class="kpis" id="kpis" aria-label="핵심 지표"></section>
 
     <section class="grid two">
@@ -76,17 +89,19 @@
         <details><summary>표로 보기</summary><div id="wasteTable" class="tbl-wrap"></div></details>
       </article>
       <article class="card">
-        <header class="card-h"><h2>선호메뉴 TOP 10 <span class="src virtual xsrc">가상</span></h2><span class="muted" id="prefSub"></span></header>
+        <header class="card-h"><h2>선호메뉴 TOP 5 <span class="src virtual xsrc">가상</span></h2><span class="muted" id="prefSub"></span></header>
         <ol id="prefList" class="pref-list"></ol>
       </article>
     </section>
 
     <section class="grid one">
       <article class="card">
-        <header class="card-h"><h2><span id="compareTitle">학교별 잔반량 비교</span> <span class="src virtual xsrc">가상</span></h2><span class="muted">학년도 누적 1인 1끼 평균 (g) · 선택한 학교 강조 · 막대를 누르면 학교 전환</span></header>
+        <header class="card-h"><h2><span id="compareTitle">규모가 비슷한 학교 잔반량 비교</span> <span class="src virtual xsrc">가상</span></h2><span class="muted" id="compareSub"></span></header>
         <div class="chart-box tall"><canvas id="compareChart" aria-label="학교별 잔반량 비교 막대 그래프" role="img"></canvas></div>
       </article>
     </section>
+
+    </div>
 
     <footer class="page-foot muted">
       학교 정보·식단·열량·영양소: <a href="https://open.neis.go.kr" target="_blank" rel="noopener">NEIS 교육정보 개방 포털</a> (매일 자동 갱신).<br>
