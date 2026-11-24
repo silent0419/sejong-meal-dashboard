@@ -16,7 +16,7 @@
     <div class="wrap topbar-inner">
       <div>
         <h1>세종 학교급식 대시보드</h1>
-        <p class="sub">식단 · 영양 · 칼로리 · 잔반량 · 선호메뉴 <span class="badge">가상 데이터</span></p>
+        <p class="sub" id="sourceLine">식단 · 영양 · 칼로리 · 잔반량 · 선호메뉴</p>
       </div>
       <button id="themeBtn" class="ghost" type="button" aria-label="화면 테마 전환">🌓 테마</button>
     </div>
@@ -24,7 +24,10 @@
 
   <main class="wrap">
     <section class="filters" aria-label="조회 조건">
-      <label>학교
+      <label>학교 검색
+        <input id="schoolSearch" type="search" placeholder="예: 도담, 고등" autocomplete="off">
+      </label>
+      <label><span>학교 <span class="muted" id="schoolCount"></span></span>
         <select id="schoolSel"></select>
       </label>
       <label>월
@@ -37,27 +40,29 @@
 
     <section class="grid two">
       <article class="card">
-        <header class="card-h"><h2>월간 식단표</h2><span class="muted" id="calHint">날짜를 누르면 상세 식단이 보여요</span></header>
+        <header class="card-h"><h2>월간 식단표 <span class="src neis">NEIS</span></h2><span class="muted" id="calHint">날짜를 누르면 상세 식단이 보여요</span></header>
         <div class="cal-head"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span></div>
         <div id="calendar" class="calendar"></div>
       </article>
       <article class="card" id="dayCard">
         <header class="card-h"><h2 id="dayTitle">일일 식단</h2><span class="muted" id="dayKcal"></span></header>
+        <div id="mealTabs" class="tabs" role="tablist"></div>
         <ul id="dayMenu" class="menu-list"></ul>
         <h3 class="mini">기준량 대비 영양소</h3>
         <div id="dayNut" class="nut-bars"></div>
         <p class="foot muted" id="allergyNote"></p>
+        <details id="originBox"><summary>원산지 정보</summary><div id="originText" class="origin"></div></details>
       </article>
     </section>
 
     <section class="grid two">
       <article class="card">
-        <header class="card-h"><h2>일별 열량</h2><span class="muted" id="kcalSub"></span></header>
+        <header class="card-h"><h2>일별 열량 <span class="src neis">NEIS</span></h2><span class="muted" id="kcalSub"></span></header>
         <div class="chart-box"><canvas id="kcalChart" aria-label="일별 열량 선 그래프" role="img"></canvas></div>
         <details><summary>표로 보기</summary><div id="kcalTable" class="tbl-wrap"></div></details>
       </article>
       <article class="card">
-        <header class="card-h"><h2>월평균 영양소</h2><span class="muted">기준량 = 100%</span></header>
+        <header class="card-h"><h2>월평균 영양소 <span class="src neis">NEIS</span></h2><span class="muted">기준량 = 100%</span></header>
         <div id="monthNut" class="nut-bars"></div>
         <h3 class="mini">에너지 구성비 (탄수화물 · 단백질 · 지방)</h3>
         <div id="energyMix"></div>
@@ -66,25 +71,26 @@
 
     <section class="grid two">
       <article class="card">
-        <header class="card-h"><h2>월별 잔반량</h2><span class="muted">1인 1끼 평균 (g)</span></header>
+        <header class="card-h"><h2>월별 잔반량 <span class="src virtual xsrc">가상</span></h2><span class="muted">1인 1끼 평균 (g)</span></header>
         <div class="chart-box"><canvas id="wasteChart" aria-label="월별 잔반량 막대 그래프" role="img"></canvas></div>
         <details><summary>표로 보기</summary><div id="wasteTable" class="tbl-wrap"></div></details>
       </article>
       <article class="card">
-        <header class="card-h"><h2>선호메뉴 TOP 10</h2><span class="muted" id="prefSub"></span></header>
+        <header class="card-h"><h2>선호메뉴 TOP 10 <span class="src virtual xsrc">가상</span></h2><span class="muted" id="prefSub"></span></header>
         <ol id="prefList" class="pref-list"></ol>
       </article>
     </section>
 
     <section class="grid one">
       <article class="card">
-        <header class="card-h"><h2>학교별 잔반량 비교</h2><span class="muted">3~11월 1인 1끼 평균 (g) · 선택한 학교 강조</span></header>
+        <header class="card-h"><h2><span id="compareTitle">학교별 잔반량 비교</span> <span class="src virtual xsrc">가상</span></h2><span class="muted">학년도 누적 1인 1끼 평균 (g) · 선택한 학교 강조 · 막대를 누르면 학교 전환</span></header>
         <div class="chart-box tall"><canvas id="compareChart" aria-label="학교별 잔반량 비교 막대 그래프" role="img"></canvas></div>
       </article>
     </section>
 
     <footer class="page-foot muted">
-      본 대시보드의 학교명과 모든 수치는 시연용 <strong>가상 데이터</strong>이며 실제 세종특별자치시교육청 및 학교 자료가 아닙니다.
+      학교 정보·식단·열량·영양소: <a href="https://open.neis.go.kr" target="_blank" rel="noopener">NEIS 교육정보 개방 포털</a> (매일 자동 갱신).<br>
+      <span class="src virtual">가상</span> 표시가 있는 잔반량·선호메뉴는 NEIS에서 제공하지 않아 시연용으로 만든 값이며, 학교 실측 자료로 교체할 수 있습니다.
       영양 기준량은 학교급식 영양관리기준을 단순화한 참고값입니다.
     </footer>
   </main>

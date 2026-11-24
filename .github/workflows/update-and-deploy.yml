@@ -1,0 +1,61 @@
+name: NEIS 데이터 갱신 및 배포
+
+on:
+  schedule:
+    - cron: "17 21 * * *"   # 매일 06:17 (KST)
+  workflow_dispatch:         # Actions 탭에서 수동 실행
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: NEIS에서 학교·급식 데이터 받기
+        if: github.event_name != 'push'
+        env:
+          NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
+        run: python3 scripts/fetch_neis.py
+
+      - name: 바뀐 데이터 커밋
+        if: github.event_name != 'push'
+        run: |
+          git add data config.json
+          if git diff --cached --quiet; then
+            echo "변경 없음"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "NEIS 급식 데이터 자동 갱신 ($(TZ=Asia/Seoul date +%F))"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

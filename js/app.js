@@ -1,4 +1,5 @@
-/* 세종 학교급식 대시보드 – 정적 사이트(GitHub Pages)용 */
+/* 세종 학교급식 대시보드 – 정적 사이트(GitHub Pages)용
+ * 데이터: data/schools.json, data/meals/<학교코드>.json  (scripts/fetch_neis.py 가 NEIS에서 생성) */
 (() => {
   "use strict";
   const $ = (s) => document.querySelector(s);
@@ -7,71 +8,106 @@
     { key: "protein", name: "단백질", unit: "g" },
     { key: "calcium", name: "칼슘", unit: "mg" },
     { key: "iron", name: "철분", unit: "mg" },
-    { key: "vitA", name: "비타민A", unit: "μgRAE" },
+    { key: "vitA", name: "비타민A", unit: "R.E" },
     { key: "vitC", name: "비타민C", unit: "mg" },
   ];
   const ALLERGY = ["", "난류", "우유", "메밀", "땅콩", "대두", "밀", "고등어", "게", "새우", "돼지고기",
     "복숭아", "토마토", "아황산류", "호두", "닭고기", "쇠고기", "오징어", "조개류", "잣"];
+  const MEAL_ORDER = ["조식", "중식", "석식"];
 
-  const state = { schools: [], school: null, month: null, day: null, cache: {}, charts: {} };
+  const state = { index: null, schools: [], school: null, month: null, day: null, mealType: null, cache: {}, charts: {} };
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const fmt = (n, d = 0) => Number(n).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d });
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmt = (n, d = 0) => (n == null || isNaN(n)) ? "-" :
+    Number(n).toLocaleString("ko-KR", { maximumFractionDigits: d, minimumFractionDigits: d });
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
                   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const todayISO = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); })();
+  const xBadge = () => state.school?.extraSource === "school" ? `<span class="src neis">학교 자료</span>` : `<span class="src virtual">가상</span>`;
+  const shortName = (n) => n.replace(/초등학교$/, "초").replace(/중학교$/, "중").replace(/고등학교$/, "고");
 
   async function loadJSON(url) {
-    const r = await fetch(url);
+    const r = await fetch(url, { cache: "no-cache" });
     if (!r.ok) throw new Error(url + " 불러오기 실패 (" + r.status + ")");
     return r.json();
   }
 
-  async function init() {
-    const idx = await loadJSON("data/schools.json");
-    state.schools = idx.schools;
-    const sel = $("#schoolSel");
+  /* ---------- 학교 선택 ---------- */
+  function fillSchoolSelect(keyword = "") {
+    const sel = $("#schoolSel"), cur = sel.value || state.school?.id;
+    const kw = keyword.trim().replace(/\s+/g, "");
+    const match = (s) => !kw || (s.name + s.dong + LEVEL_NAME[s.level] + s.address).replace(/\s+/g, "").includes(kw);
+    sel.innerHTML = "";
+    let n = 0;
     ["초", "중", "고"].forEach((lv) => {
+      const list = state.schools.filter((s) => s.level === lv && match(s));
+      if (!list.length) return;
       const g = document.createElement("optgroup");
-      g.label = LEVEL_NAME[lv];
-      idx.schools.filter((s) => s.level === lv).forEach((s) => g.append(new Option(`${s.name} (${s.dong})`, s.id)));
-      sel.append(g);
+      g.label = `${LEVEL_NAME[lv]} (${list.length})`;
+      list.forEach((s) => g.append(new Option(`${s.name}${s.dong ? ` (${s.dong})` : ""}`, s.id)));
+      sel.append(g); n += list.length;
     });
-    const urlId = new URLSearchParams(location.search).get("school");
-    const startId = [urlId, store.get("school")].find((id) => idx.schools.some((s) => s.id === id)) || idx.schools[0].id;
-    sel.value = startId;
+    $("#schoolCount").textContent = kw ? `검색 ${n}곳` : `${n}곳`;
+    if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+    return n;
+  }
+
+  async function init() {
+    state.index = await loadJSON("data/schools.json");
+    state.schools = state.index.schools;
+    $("#sourceLine").innerHTML = `${state.index.schoolYear}학년도 · 출처 NEIS 교육정보 개방 포털 · 업데이트 ${esc(state.index.updated)}`;
+    fillSchoolSelect();
+    const sel = $("#schoolSel");
     sel.addEventListener("change", () => selectSchool(sel.value));
-    $("#monthSel").addEventListener("change", (e) => { state.month = +e.target.value; state.day = null; renderMonth(); });
+    $("#schoolSearch").addEventListener("input", (e) => {
+      const n = fillSchoolSelect(e.target.value);
+      if (n && sel.value !== state.school?.id) selectSchool(sel.value);
+    });
+    $("#monthSel").addEventListener("change", (e) => { state.month = e.target.value; state.day = null; renderMonth(); });
     $("#themeBtn").addEventListener("click", toggleTheme);
+
+    const urlId = new URLSearchParams(location.search).get("school");
+    const startId = [urlId, store.get("school")].find((id) => state.schools.some((s) => s.id === id)) || state.schools[0].id;
+    sel.value = startId;
     await selectSchool(startId);
   }
 
   async function selectSchool(id) {
     if (!state.cache[id]) state.cache[id] = await loadJSON(`data/meals/${id}.json`);
     state.school = state.cache[id];
+    if ($("#schoolSel").value !== id) { $("#schoolSearch").value = ""; fillSchoolSelect(); $("#schoolSel").value = id; }
     store.set("school", id);
     const url = new URL(location.href); url.searchParams.set("school", id); history.replaceState(null, "", url);
 
-    const months = [...new Set(Object.keys(state.school.meals).map((d) => +d.slice(5, 7)))];
+    const months = [...new Set(Object.keys(state.school.meals).map((d) => d.slice(0, 7)))].sort();
     const ms = $("#monthSel");
-    const prev = state.month;
     ms.innerHTML = "";
-    months.forEach((m) => ms.append(new Option(`2026년 ${m}월`, m)));
-    state.month = months.includes(prev) ? prev : months[months.length - 1];
+    months.forEach((m) => ms.append(new Option(`${m.slice(0, 4)}년 ${+m.slice(5)}월`, m)));
+    const thisMonth = todayISO.slice(0, 7);
+    state.month = months.includes(state.month) ? state.month
+      : months.includes(thisMonth) ? thisMonth : months.filter((m) => m <= thisMonth).pop() || months[0];
     ms.value = state.month;
     state.day = null;
 
     const s = state.school;
-    $("#schoolInfo").innerHTML = `<strong>${esc(s.name)}</strong> · 세종시 ${esc(s.dong)} · 학생 ${fmt(s.students)}명 · 1끼 기준 ${fmt(s.standard.kcal)}kcal`;
+    const home = s.homepage ? ` · <a href="${esc(s.homepage)}" target="_blank" rel="noopener">홈페이지</a>` : "";
+    $("#schoolInfo").innerHTML = `<strong>${esc(s.name)}</strong> · ${esc(s.address)} · ${esc(s.found)} · ${esc(s.coedu)}` +
+      ` · 하루 평균 급식 ${fmt(s.avgServed)}명${home}`;
+    document.querySelectorAll(".xsrc").forEach((el) => { el.outerHTML = xBadge().replace('class="src', 'class="xsrc src'); });
     renderMonth();
     renderPrefs();
     renderCompare();
   }
 
-  const monthDays = () => Object.keys(state.school.meals).filter((d) => +d.slice(5, 7) === state.month).sort();
+  const monthDays = () => Object.keys(state.school.meals).filter((d) => d.startsWith(state.month)).sort();
 
   function renderMonth() {
     const days = monthDays();
-    if (!state.day || !days.includes(state.day)) state.day = days[days.length - 1];
+    if (!days.length) return;
+    if (!state.day || !days.includes(state.day)) {
+      state.day = days.includes(todayISO) ? todayISO : (days.filter((d) => d <= todayISO).pop() || days[0]);
+    }
+    state.mealType = null;
     renderKpis(days);
     renderCalendar(days);
     renderDay();
@@ -81,41 +117,47 @@
   }
 
   function renderKpis(days) {
-    const s = state.school, meals = days.map((d) => s.meals[d]);
-    const avgKcal = meals.reduce((a, m) => a + m.kcal, 0) / meals.length;
-    const kcalPct = (avgKcal / s.standard.kcal) * 100;
-    const wi = s.waste.findIndex((w) => w.month === state.month);
-    const w = s.waste[wi], pw = s.waste[wi - 1];
-    let delta = "전월 자료 없음", cls = "";
-    if (pw) {
-      const d = ((w.perPersonG - pw.perPersonG) / pw.perPersonG) * 100;
-      cls = d <= 0 ? "good" : "bad";
-      delta = `${d <= 0 ? "▼" : "▲"} 전월 대비 ${fmt(Math.abs(d), 1)}% ${d <= 0 ? "감소" : "증가"}`;
+    const s = state.school, meals = days.map((d) => s.meals[d]).filter((m) => m.kcal);
+    const mo = +state.month.slice(5);
+    const avgKcal = meals.reduce((a, m) => a + m.kcal, 0) / (meals.length || 1);
+    const wi = s.waste.findIndex((w) => w.ym === state.month);
+    const w = s.waste[wi], pw = wi > 0 ? s.waste[wi - 1] : null;
+    let wasteHtml;
+    if (w) {
+      let delta = "전월 자료 없음", cls = "";
+      if (pw) {
+        const d = ((w.perPersonG - pw.perPersonG) / pw.perPersonG) * 100;
+        cls = d <= 0 ? "good" : "bad";
+        delta = `${d <= 0 ? "▼" : "▲"} 전월 대비 ${fmt(Math.abs(d), 1)}% ${d <= 0 ? "감소" : "증가"}`;
+      }
+      wasteHtml = `<div class="kpi"><div class="label">${mo}월 1인 1끼 잔반 ${xBadge()}</div>
+          <div class="value">${fmt(w.perPersonG, 1)}<small>g</small></div><div class="delta ${cls}">${delta}</div></div>
+        <div class="kpi"><div class="label">${mo}월 잔반 총량 ${xBadge()}</div>
+          <div class="value">${fmt(w.totalKg / 1000, 2)}<small>톤</small></div>
+          <div class="delta">급식 ${w.servingDays}일 · 연인원 ${fmt(w.servedTotal)}명</div></div>`;
+    } else {
+      wasteHtml = `<div class="kpi"><div class="label">${mo}월 잔반</div><div class="value">-</div><div class="delta">아직 집계 전인 달입니다</div></div>
+        <div class="kpi"><div class="label">${mo}월 급식일</div><div class="value">${days.length}<small>일</small></div><div class="delta">예정 식단 포함</div></div>`;
     }
     const top = s.preference.top[0];
     $("#kpis").innerHTML = `
-      <div class="kpi"><div class="label">${state.month}월 평균 열량</div>
+      <div class="kpi"><div class="label">${mo}월 평균 열량 <span class="src neis">NEIS</span></div>
         <div class="value">${fmt(avgKcal)}<small>kcal</small></div>
-        <div class="delta">기준 ${fmt(s.standard.kcal)}kcal의 ${fmt(kcalPct)}%</div></div>
-      <div class="kpi"><div class="label">${state.month}월 1인 1끼 잔반</div>
-        <div class="value">${fmt(w.perPersonG, 1)}<small>g</small></div>
-        <div class="delta ${cls}">${delta}</div></div>
-      <div class="kpi"><div class="label">${state.month}월 잔반 총량</div>
-        <div class="value">${fmt(w.totalKg / 1000, 2)}<small>톤</small></div>
-        <div class="delta">급식 ${w.servingDays}일 · ${fmt(w.totalKg)}kg</div></div>
-      <div class="kpi"><div class="label">선호메뉴 1위</div>
-        <div class="value" style="font-size:1.4rem">${esc(top.menu)}</div>
-        <div class="delta">${fmt(top.votes)}표 · 응답자의 ${fmt(top.share, 1)}%</div></div>`;
+        <div class="delta">기준 ${fmt(s.standard.kcal)}kcal의 ${fmt(avgKcal / s.standard.kcal * 100)}% · ${meals.length}일</div></div>
+      ${wasteHtml}
+      <div class="kpi"><div class="label">선호메뉴 1위 ${xBadge()}</div>
+        <div class="value" style="font-size:1.3rem">${esc(top ? top.menu : "-")}</div>
+        <div class="delta">${top ? `${fmt(top.votes)}표 · 응답자의 ${fmt(top.share, 1)}%` : ""}</div></div>`;
   }
 
   function renderCalendar(days) {
     const cal = $("#calendar");
     cal.innerHTML = "";
-    const y = 2026, m = state.month;
+    const y = +state.month.slice(0, 4), m = +state.month.slice(5);
     const last = new Date(y, m, 0).getDate();
     let first = true;
     for (let d = 1; d <= last; d++) {
-      const dt = new Date(y, m - 1, d), wd = dt.getDay();
+      const wd = new Date(y, m - 1, d).getDay();
       if (wd === 0 || wd === 6) continue;
       if (first) { for (let i = 1; i < wd; i++) cal.append(Object.assign(document.createElement("div"), { className: "day blank" })); first = false; }
       const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -124,10 +166,10 @@
       el.className = "day" + (meal ? "" : " empty") + (iso === state.day ? " sel" : "");
       if (meal) {
         el.type = "button";
-        el.innerHTML = `<div class="d"><span>${d}</span><span class="k">${meal.kcal}</span></div>
+        el.innerHTML = `<div class="d"><span>${d}</span><span class="k">${meal.kcal ?? ""}</span></div>
           <div class="m">${meal.menu.map((x) => esc(x.name)).join(" · ")}</div>`;
-        el.setAttribute("aria-label", `${m}월 ${d}일 식단, ${meal.kcal}킬로칼로리`);
-        el.addEventListener("click", () => { state.day = iso; renderCalendar(days); renderDay(); });
+        el.setAttribute("aria-label", `${m}월 ${d}일 식단${meal.kcal ? `, ${meal.kcal}킬로칼로리` : ""}`);
+        el.addEventListener("click", () => { state.day = iso; state.mealType = null; renderCalendar(days); renderDay(); });
       } else {
         el.innerHTML = `<div class="d"><span>${d}</span></div><div class="m">급식 없음</div>`;
       }
@@ -136,6 +178,7 @@
   }
 
   function nutRow(name, val, std, unit) {
+    if (val == null) return `<div class="nut-row"><span class="name">${name}</span><span class="track"></span><span class="num muted">자료 없음</span></div>`;
     const pct = (val / std) * 100, w = Math.min(pct, 150) / 150 * 100;
     return `<div class="nut-row" title="${name} ${fmt(val, 1)}${unit} / 기준 ${fmt(std, 1)}${unit}">
       <span class="name">${name}</span>
@@ -144,23 +187,36 @@
   }
 
   function renderDay() {
-    const s = state.school, meal = s.meals[state.day];
+    const s = state.school, day = s.meals[state.day];
+    const all = { [day.type]: day, ...(day.others || {}) };
+    const types = MEAL_ORDER.filter((t) => all[t]);
+    if (!state.mealType || !all[state.mealType]) state.mealType = day.type;
+    const meal = all[state.mealType];
+
     const dt = new Date(state.day + "T00:00:00");
-    const wd = "일월화수목금토"[dt.getDay()];
-    $("#dayTitle").textContent = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${wd}) 식단`;
-    $("#dayKcal").textContent = `${fmt(meal.kcal)} kcal · 기준의 ${fmt(meal.kcal / s.standard.kcal * 100)}%`;
+    $("#dayTitle").textContent = `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${"일월화수목금토"[dt.getDay()]}) 식단`;
+    $("#dayKcal").textContent = meal.kcal ? `${fmt(meal.kcal)} kcal · 기준의 ${fmt(meal.kcal / s.standard.kcal * 100)}%${meal.served ? ` · ${fmt(meal.served)}명` : ""}` : "";
+    const tabs = $("#mealTabs");
+    tabs.innerHTML = types.length > 1 ? types.map((t) =>
+      `<button type="button" role="tab" aria-selected="${t === state.mealType}" data-t="${t}">${t}</button>`).join("") : "";
+    tabs.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { state.mealType = b.dataset.t; renderDay(); }));
+
     $("#dayMenu").innerHTML = meal.menu.map((x) =>
       `<li>${esc(x.name)}${x.allergy.length ? `<span class="alg" title="${x.allergy.map((a) => ALLERGY[a]).join(", ")}">${x.allergy.join(".")}</span>` : ""}</li>`).join("");
+    const n = meal.nutrients || {};
     $("#dayNut").innerHTML = [nutRow("열량", meal.kcal, s.standard.kcal, "kcal"),
-      ...NUT.map((n) => nutRow(n.name, meal.nutrients[n.key], s.standard[n.key], n.unit))].join("");
+      ...NUT.map((x) => nutRow(x.name, n[x.key], s.standard[x.key], x.unit))].join("");
     const used = [...new Set(meal.menu.flatMap((x) => x.allergy))].sort((a, b) => a - b);
-    $("#allergyNote").textContent = used.length ? "알레르기 유발식품: " + used.map((a) => `${a}.${ALLERGY[a]}`).join(" ") : "알레르기 유발식품 없음";
+    $("#allergyNote").textContent = used.length ? "알레르기 유발식품: " + used.map((a) => `${a}.${ALLERGY[a]}`).join(" ") : "알레르기 유발식품 표시 없음";
+    const origin = s.origins?.[meal.o] || "";
+    $("#originBox").hidden = !origin;
+    $("#originText").textContent = origin.split("\n").filter((l) => !/:\s*$/.test(l)).join("\n");
   }
 
   /* ---------- Chart.js 공통 ---------- */
-  function baseOpts(extra = {}) {
-    const grid = css("--grid"), muted = css("--muted");
-    return Object.assign({
+  function baseOpts() {
+    const muted = css("--muted");
+    return {
       responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
       interaction: { mode: "index", intersect: false },
       plugins: {
@@ -170,9 +226,9 @@
       },
       scales: {
         x: { grid: { display: false }, border: { color: css("--axis") }, ticks: { color: muted, font: { size: 11 } } },
-        y: { grid: { color: grid }, border: { display: false }, ticks: { color: muted, font: { size: 11 } }, beginAtZero: true },
+        y: { grid: { color: css("--grid") }, border: { display: false }, ticks: { color: muted, font: { size: 11 } }, beginAtZero: true },
       },
-    }, extra);
+    };
   }
   function draw(id, config) {
     if (state.charts[id]) state.charts[id].destroy();
@@ -181,20 +237,22 @@
   const table = (head, rows) => `<table><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${
     rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
 
-  function renderKcal(days) {
+  function renderKcal(allDays) {
     const s = state.school, std = s.standard.kcal;
+    const days = allDays.filter((d) => s.meals[d].kcal);
     const labels = days.map((d) => `${+d.slice(8)}일`);
     const vals = days.map((d) => s.meals[d].kcal);
-    $("#kcalSub").textContent = `점선 = 기준 ${fmt(std)}kcal`;
+    $("#kcalSub").textContent = `중식 기준 · 점선 = 기준 ${fmt(std)}kcal`;
     const opts = baseOpts();
+    const lo = Math.min(std, ...vals), hi = Math.max(std, ...vals);
     opts.scales.y.beginAtZero = false;
-    opts.scales.y.suggestedMin = Math.round(std * 0.75 / 50) * 50;
-    opts.scales.y.suggestedMax = Math.round(std * 1.2 / 50) * 50;
+    opts.scales.y.suggestedMin = Math.floor(lo * 0.9 / 50) * 50;
+    opts.scales.y.suggestedMax = Math.ceil(hi * 1.05 / 50) * 50;
     opts.plugins.tooltip.callbacks = {
       label: (c) => c.datasetIndex === 0 ? `열량 ${fmt(c.raw)} kcal` : `기준 ${fmt(c.raw)} kcal`,
-      afterBody: (items) => { const d = days[items[0].dataIndex]; return s.meals[d].menu.map((x) => x.name).join(", "); },
+      afterBody: (items) => s.meals[days[items[0].dataIndex]].menu.map((x) => x.name).join(", "),
     };
-    opts.onClick = (_, el) => { if (el.length) { state.day = days[el[0].index]; renderCalendar(days); renderDay(); } };
+    opts.onClick = (_, el) => { if (el.length) { state.day = days[el[0].index]; state.mealType = null; renderCalendar(allDays); renderDay(); } };
     draw("kcalChart", {
       type: "line",
       data: { labels, datasets: [
@@ -204,17 +262,18 @@
       ] },
       options: opts,
     });
-    $("#kcalTable").innerHTML = table(["날짜", "열량(kcal)", "기준 대비"],
-      days.map((d) => [d.slice(5).replace("-", "/"), fmt(s.meals[d].kcal), fmt(s.meals[d].kcal / std * 100) + "%"]));
+    $("#kcalTable").innerHTML = table(["날짜", "열량(kcal)", "기준 대비", "급식인원"],
+      days.map((d) => { const m = s.meals[d]; return [d.slice(5).replace("-", "/"), fmt(m.kcal), fmt(m.kcal / std * 100) + "%", fmt(m.served)]; }));
   }
 
   function renderMonthNut(days) {
-    const s = state.school, meals = days.map((d) => s.meals[d]);
-    const avg = (f) => meals.reduce((a, m) => a + f(m), 0) / meals.length;
+    const s = state.school, meals = days.map((d) => s.meals[d]).filter((m) => m.kcal);
+    const avg = (f) => { const v = meals.map(f).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
     $("#monthNut").innerHTML = [nutRow("열량", avg((m) => m.kcal), s.standard.kcal, "kcal"),
-      ...NUT.map((n) => nutRow(n.name, avg((m) => m.nutrients[n.key]), s.standard[n.key], n.unit))].join("");
-    const c = avg((m) => m.nutrients.carb) * 4, p = avg((m) => m.nutrients.protein) * 4, f = avg((m) => m.nutrients.fat) * 9;
+      ...NUT.map((n) => nutRow(n.name, avg((m) => m.nutrients?.[n.key]), s.standard[n.key], n.unit))].join("");
+    const c = avg((m) => m.nutrients?.carb) * 4, p = avg((m) => m.nutrients?.protein) * 4, f = avg((m) => m.nutrients?.fat) * 9;
     const t = c + p + f;
+    if (!t) { $("#energyMix").innerHTML = `<p class="muted">자료 없음</p>`; return; }
     const parts = [["탄수화물", c / t * 100, "--s1", "권장 55~65%"], ["단백질", p / t * 100, "--s2", "권장 7~20%"], ["지방", f / t * 100, "--s3", "권장 15~30%"]];
     $("#energyMix").innerHTML = `<div class="mix-bar" role="img" aria-label="${parts.map((x) => `${x[0]} ${fmt(x[1])}%`).join(", ")}">${
       parts.map((x) => `<span style="width:${x[1]}%;background:var(${x[2]})" title="${x[0]} ${fmt(x[1], 1)}%"></span>`).join("")}</div>
@@ -233,42 +292,46 @@
       type: "bar",
       data: { labels: s.waste.map((w) => `${w.month}월`), datasets: [{
         data: s.waste.map((w) => w.perPersonG),
-        backgroundColor: s.waste.map((w) => w.month === state.month ? css("--s1") : css("--other")),
+        backgroundColor: s.waste.map((w) => w.ym === state.month ? css("--s1") : css("--other")),
         hoverBackgroundColor: css("--s1"),
         borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 34 }] },
       options: opts,
     });
-    $("#wasteTable").innerHTML = table(["월", "급식일", "1인 1끼(g)", "총량(kg)"],
-      s.waste.map((w) => [`${w.month}월`, w.servingDays, fmt(w.perPersonG, 1), fmt(w.totalKg, 1)]));
+    $("#wasteTable").innerHTML = table(["월", "급식일", "연인원", "1인 1끼(g)", "총량(kg)"],
+      s.waste.map((w) => [`${w.month}월`, w.servingDays, fmt(w.servedTotal), fmt(w.perPersonG, 1), fmt(w.totalKg, 1)]));
   }
 
   function renderPrefs() {
-    const pr = state.school.preference, max = pr.top[0].votes;
+    const pr = state.school.preference, max = pr.top[0]?.votes || 1;
     $("#prefSub").textContent = `${pr.surveyDate} 설문 · 응답 ${fmt(pr.respondents)}명 · 복수응답`;
     $("#prefList").innerHTML = pr.top.map((t) => `<li title="${esc(t.menu)}: ${fmt(t.votes)}표 (${fmt(t.share, 1)}%)">
-      <span class="rk">${t.rank}</span><span>${esc(t.menu)}</span>
+      <span class="rk">${t.rank}</span><span class="pm">${esc(t.menu)}</span>
       <span class="track"><span class="fill" style="width:${t.votes / max * 100}%"></span></span>
       <span class="num">${fmt(t.votes)}표</span></li>`).join("");
   }
 
   function renderCompare() {
-    const list = [...state.schools].sort((a, b) => a.avgWastePerPersonG - b.avgWastePerPersonG);
+    const lv = state.school.level;
+    const list = state.schools.filter((s) => s.level === lv && s.avgWastePerPersonG != null)
+      .sort((a, b) => a.avgWastePerPersonG - b.avgWastePerPersonG);
+    $("#compareTitle").textContent = `${LEVEL_NAME[lv]} ${list.length}곳 잔반량 비교`;
     const opts = baseOpts();
-    opts.indexAxis = "x";
+    opts.scales.x.ticks.autoSkip = false;
+    opts.scales.x.ticks.maxRotation = 60;
     opts.plugins.tooltip.callbacks = {
       title: (i) => list[i[0].dataIndex].name,
       label: (c) => `1인 1끼 평균 잔반 ${fmt(c.raw, 1)} g`,
-      afterLabel: (c) => `${LEVEL_NAME[list[c.dataIndex].level]} · 학생 ${fmt(list[c.dataIndex].students)}명`,
+      afterLabel: (c) => `하루 평균 급식 ${fmt(list[c.dataIndex].avgServed)}명`,
     };
-    opts.onClick = (_, el) => { if (el.length) { const id = list[el[0].index].id; $("#schoolSel").value = id; selectSchool(id); } };
+    opts.onClick = (_, el) => { if (el.length) selectSchool(list[el[0].index].id); };
     opts.onHover = (e, el) => { e.native.target.style.cursor = el.length ? "pointer" : "default"; };
     draw("compareChart", {
       type: "bar",
-      data: { labels: list.map((s) => s.name.replace(/(초등|중|고등)학교$/, (m) => ({ "초등학교": "초", "중학교": "중", "고등학교": "고" }[m]))),
+      data: { labels: list.map((s) => shortName(s.name)),
         datasets: [{ data: list.map((s) => s.avgWastePerPersonG),
           backgroundColor: list.map((s) => s.id === state.school.id ? css("--s1") : css("--other")),
           hoverBackgroundColor: css("--s1"),
-          borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 44 }] },
+          borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 36 }] },
       options: opts,
     });
   }
