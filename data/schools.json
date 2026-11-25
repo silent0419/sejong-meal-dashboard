@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-24 16:10",
+ "updated": "2026-11-25 13:15",
  "schoolYear": 2026,
  "source": "NEIS 교육정보 개방 포털 (학교기본정보, 급식식단정보)",
  "schools": [
@@ -406,7 +406,7 @@
    "homepage": "http://suwang.sjedues.kr/ ",
    "tel": "044-863-4101",
    "avgServed": 98,
-   "mealDays": 168,
+   "mealDays": 190,
    "avgWastePerPersonG": 104.3
   },
   {
@@ -476,7 +476,7 @@
    "homepage": "http://yeonnam.sjedues.kr",
    "tel": "044-863-4500",
    "avgServed": 98,
-   "mealDays": 168,
+   "mealDays": 190,
    "avgWastePerPersonG": 106.1
   },
   {
@@ -630,7 +630,7 @@
    "homepage": "http://jeonui.sjedues.kr",
    "tel": "044-863-1451",
    "avgServed": 135,
-   "mealDays": 164,
+   "mealDays": 186,
    "avgWastePerPersonG": 94.5
   },
   {
@@ -713,8 +713,8 @@
    "coedu": "남여공학",
    "homepage": "https://jiphyeon.sjedues.kr/",
    "tel": "044-902-6700",
-   "avgServed": 852,
-   "mealDays": 164,
+   "avgServed": 851,
+   "mealDays": 186,
    "avgWastePerPersonG": 91.0
   },
   {
@@ -727,8 +727,8 @@
    "coedu": "남여공학",
    "homepage": "http://charmsaem.sjedues.kr/",
    "tel": "044-868-3782",
-   "avgServed": 443,
-   "mealDays": 164,
+   "avgServed": 444,
+   "mealDays": 186,
    "avgWastePerPersonG": 78.2
   },
   {
@@ -770,7 +770,7 @@
    "homepage": "http://haemil.sjedues.kr/",
    "tel": "044-902-9900",
    "avgServed": 1311,
-   "mealDays": 165,
+   "mealDays": 187,
    "avgWastePerPersonG": 107.6
   },
   {
@@ -1330,7 +1330,7 @@
    "homepage": "https://sjmirae.sjeduhs.kr/",
    "tel": "044-275-4092",
    "avgServed": 229,
-   "mealDays": 164,
+   "mealDays": 186,
    "avgWastePerPersonG": 98.2
   },
   {
