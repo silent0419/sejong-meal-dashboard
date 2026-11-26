@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-25 13:15",
+ "updated": "2026-11-26 12:38",
  "schoolYear": 2026,
  "source": "NEIS 교육정보 개방 포털 (학교기본정보, 급식식단정보)",
  "schools": [
@@ -28,7 +28,7 @@
    "homepage": "http://garak.sjedues.kr/",
    "tel": "044-903-1200",
    "avgServed": 610,
-   "mealDays": 166,
+   "mealDays": 188,
    "avgWastePerPersonG": 80.1
   },
   {
@@ -196,7 +196,7 @@
    "homepage": "http://dodam.sjedues.kr",
    "tel": "044-410-0103",
    "avgServed": 1034,
-   "mealDays": 166,
+   "mealDays": 188,
    "avgWastePerPersonG": 84.6
   },
   {
@@ -294,7 +294,7 @@
    "homepage": "https://sanul.sjedues.kr/sanul-e/main.do",
    "tel": "044-960-8300",
    "avgServed": 559,
-   "mealDays": 168,
+   "mealDays": 190,
    "avgWastePerPersonG": 101.2
   },
   {
@@ -335,8 +335,8 @@
    "coedu": "남여공학",
    "homepage": "http://saeum.sjedues.kr/",
    "tel": "044-902-3200",
-   "avgServed": 578,
-   "mealDays": 168,
+   "avgServed": 576,
+   "mealDays": 190,
    "avgWastePerPersonG": 85.0
   },
   {
@@ -378,7 +378,7 @@
    "homepage": "http://sojeong.sjedues.kr/",
    "tel": "044-566-6060",
    "avgServed": 60,
-   "mealDays": 165,
+   "mealDays": 187,
    "avgWastePerPersonG": 88.5
   },
   {
@@ -391,8 +391,8 @@
    "coedu": "남여공학",
    "homepage": "http://solbit.sjedues.kr/index.do",
    "tel": "044-410-2500",
-   "avgServed": 465,
-   "mealDays": 164,
+   "avgServed": 463,
+   "mealDays": 186,
    "avgWastePerPersonG": 102.5
   },
   {
@@ -405,7 +405,7 @@
    "coedu": "남여공학",
    "homepage": "http://suwang.sjedues.kr/ ",
    "tel": "044-863-4101",
-   "avgServed": 98,
+   "avgServed": 97,
    "mealDays": 190,
    "avgWastePerPersonG": 104.3
   },
@@ -475,7 +475,7 @@
    "coedu": "남여공학",
    "homepage": "http://yeonnam.sjedues.kr",
    "tel": "044-863-4500",
-   "avgServed": 98,
+   "avgServed": 97,
    "mealDays": 190,
    "avgWastePerPersonG": 106.1
   },
@@ -993,8 +993,8 @@
    "coedu": "남여공학",
    "homepage": "http://sodam.sjedums.kr",
    "tel": "044-905-0200",
-   "avgServed": 679,
-   "mealDays": 164,
+   "avgServed": 680,
+   "mealDays": 186,
    "avgWastePerPersonG": 104.5
   },
   {
@@ -1245,8 +1245,8 @@
    "coedu": "남여공학",
    "homepage": "http://boram.sjeduhs.kr",
    "tel": "044-999-7100",
-   "avgServed": 954,
-   "mealDays": 167,
+   "avgServed": 955,
+   "mealDays": 188,
    "avgWastePerPersonG": 104.9
   },
   {
