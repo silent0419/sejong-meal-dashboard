@@ -57,7 +57,11 @@
   async function init() {
     state.index = await loadJSON("data/schools.json");
     state.schools = state.index.schools;
-    $("#sourceLine").innerHTML = `${state.index.schoolYear}학년도 · 출처 NEIS 교육정보 개방 포털 · 업데이트 ${esc(state.index.updated)}`;
+    $("#sourceLine").innerHTML = `<span class="meta m-hide">세종특별자치시 <b>초·중·고 ${state.schools.length}곳</b></span>
+      <span class="meta">📅 <b>${state.index.schoolYear}학년도</b></span>
+      <span class="meta m-hide">출처 <span class="tag neis">NEIS</span> 교육정보 개방 포털</span>
+      <span class="meta">🔄 업데이트 <b>${esc(state.index.updated)}</b></span>`;
+    updateThemeBtn();
     fillSchoolSelect();
     const sel = $("#schoolSel");
     sel.addEventListener("change", () => selectSchool(sel.value));
@@ -237,15 +241,49 @@
     tabs.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { state.mealType = b.dataset.t; renderDay(); }));
 
     $("#dayMenu").innerHTML = meal.menu.map((x) =>
-      `<li>${esc(x.name)}${x.allergy.length ? `<span class="alg" title="${x.allergy.map((a) => ALLERGY[a]).join(", ")}">${x.allergy.join(".")}</span>` : ""}</li>`).join("");
+      `<li data-alg="${x.allergy.join(" ")}">${esc(x.name)}${x.allergy.length ? `<span class="alg" title="${x.allergy.map((a) => ALLERGY[a]).join(", ")}">${x.allergy.join("·")}</span>` : ""}</li>`).join("");
     const n = meal.nutrients || {};
     $("#dayNut").innerHTML = [nutRow("열량", meal.kcal, s.standard.kcal, "kcal"),
       ...NUT.map((x) => nutRow(x.name, n[x.key], s.standard[x.key], x.unit))].join("");
     const used = [...new Set(meal.menu.flatMap((x) => x.allergy))].sort((a, b) => a - b);
-    $("#allergyNote").textContent = used.length ? "알레르기 유발식품: " + used.map((a) => `${a}.${ALLERGY[a]}`).join(" ") : "알레르기 유발식품 표시 없음";
-    const origin = s.origins?.[meal.o] || "";
-    $("#originBox").hidden = !origin;
-    $("#originText").textContent = origin.split("\n").filter((l) => !/:\s*$/.test(l)).join("\n");
+    renderAllergy(used);
+    renderOrigin(s.origins?.[meal.o] || "");
+  }
+
+  function renderAllergy(used) {
+    const box = $("#allergyBox");
+    if (!used.length) { box.innerHTML = `<div class="allergy-h">✅ 알레르기 유발식품</div><div class="allergy-none">이 식단에는 표시된 알레르기 유발식품이 없습니다.</div>`; return; }
+    box.innerHTML = `<div class="allergy-h">⚠️ 알레르기 유발식품 <span class="muted">${used.length}종</span></div>
+      <div class="alg-chips">${used.map((a) => `<button type="button" class="alg-chip" data-a="${a}"><b>${a}</b>${ALLERGY[a]}</button>`).join("")}</div>
+      <div class="allergy-tip">항목에 마우스를 올리거나 누르면 해당 메뉴가 표시됩니다.</div>`;
+    const items = [...document.querySelectorAll("#dayMenu li")];
+    const mark = (a) => {
+      box.querySelectorAll(".alg-chip").forEach((c) => c.classList.toggle("on", c.dataset.a === a));
+      items.forEach((li) => li.classList.toggle("hit", !!a && li.dataset.alg.split(" ").includes(a)));
+    };
+    box.querySelectorAll(".alg-chip").forEach((c) => {
+      c.addEventListener("mouseenter", () => mark(c.dataset.a));
+      c.addEventListener("mouseleave", () => mark(null));
+      c.addEventListener("focus", () => mark(c.dataset.a));
+      c.addEventListener("blur", () => mark(null));
+      c.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") mark(c.classList.contains("on") ? null : c.dataset.a); });
+    });
+  }
+
+  const SKIP_ORIGIN = /^(미사용|제공시 표기|해당없음|-)?$/;
+  const IMPORTED = /외국|수입|러시아|원양|베트남|중국|페루|호주|미국|칠레|노르웨이|인도네시아|필리핀|태국|뉴질랜드|캐나다|스페인|덴마크|브라질|아르헨티나|태평양|대서양/;
+  function renderOrigin(text) {
+    const rows = text.split("\n").map((l) => {
+      const i = l.indexOf(":");
+      return i < 0 ? null : { item: l.slice(0, i).trim(), from: l.slice(i + 1).trim() };
+    }).filter((r) => r && r.item && !SKIP_ORIGIN.test(r.from) && r.item !== "비고");
+    $("#originBox").hidden = !rows.length;
+    if (!rows.length) return;
+    const imp = rows.filter((r) => IMPORTED.test(r.from));
+    $("#originText").innerHTML = `<div class="origin-sum"><span>표시 품목 <b>${rows.length}</b>개</span>
+        <span>국내산 <b>${rows.length - imp.length}</b>개</span><span>수입·원양 포함 <b>${imp.length}</b>개</span></div>
+      <div class="origin-grid">${rows.map((r) => `<div class="og${IMPORTED.test(r.from) ? " imp" : ""}" title="${esc(r.item)} : ${esc(r.from)}">
+        <span class="item">${esc(r.item)}</span><span class="from">${esc(r.from)}</span></div>`).join("")}</div>`;
   }
 
   /* ---------- Chart.js 공통 ---------- */
@@ -397,7 +435,15 @@
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
     store.set("theme", root.dataset.theme);
+    updateThemeBtn();
     renderMonth(); renderCompare();
+  }
+
+  function updateThemeBtn() {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    $("#themeIcon").textContent = dark ? "☀️" : "🌙";
+    $("#themeLabel").textContent = dark ? "라이트 모드" : "다크 모드";
   }
 
   init().catch((e) => {

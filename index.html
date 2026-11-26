@@ -15,13 +15,15 @@
   <header class="topbar">
     <div class="wrap topbar-inner">
       <div class="brand">
-        <img id="logo" src="img/logo.png" alt="세종특별자치시교육청" onerror="this.remove()">
-        <div>
-        <h1>세종 학교급식 대시보드</h1>
-        <p class="sub" id="sourceLine">식단 · 영양 · 칼로리 · 잔반량 · 선호메뉴</p>
+        <img class="logo logo-light" src="img/logo-light.png" alt="세종특별자치시교육청" onerror="this.remove()">
+        <img class="logo logo-dark" src="img/logo-dark.png" alt="세종특별자치시교육청" onerror="this.remove()">
+        <span class="brand-divider" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>학교급식 대시보드</h1>
+          <p class="meta-line" id="sourceLine">식단 · 영양 · 칼로리 · 잔반량 · 선호메뉴</p>
         </div>
       </div>
-      <button id="themeBtn" class="ghost" type="button" aria-label="화면 테마 전환">🌓 테마</button>
+      <button id="themeBtn" class="theme-btn" type="button" aria-label="화면 테마 전환"><span id="themeIcon">🌙</span><span id="themeLabel">다크 모드</span></button>
     </div>
   </header>
 
@@ -67,8 +69,8 @@
         <ul id="dayMenu" class="menu-list"></ul>
         <h3 class="mini">기준량 대비 영양소</h3>
         <div id="dayNut" class="nut-bars"></div>
-        <p class="foot muted" id="allergyNote"></p>
-        <details id="originBox" class="btn-details"><summary>원산지 정보 보기</summary><div id="originText" class="origin"></div></details>
+        <div class="allergy" id="allergyBox"></div>
+        <details id="originBox" class="btn-details"><summary>원산지 정보 보기</summary><div id="originText"></div></details>
       </article>
     </section>
 

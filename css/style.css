@@ -146,7 +146,7 @@ th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; backgroun
 .pref-list .pm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.brand img { height: 52px; width: auto; flex-shrink: 0; }
+
 .field { display: flex; flex-direction: column; gap: 4px; }
 .flabel { font-size: .8rem; color: var(--text-2); }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
@@ -155,7 +155,6 @@ th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; backgroun
 .seg button:hover { background: var(--accent-wash); }
 .seg button[aria-checked="true"] { background: var(--s1); color: #fff; font-weight: 600; }
 @media (max-width: 520px) {
-  .brand img { height: 32px; }
   .field { flex: 1 1 100%; }
   .seg { width: 100%; }
   .seg button { flex: 1; padding: 8px 4px; }
@@ -227,9 +226,6 @@ th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; backgroun
 .tag.virtual { background: #fab219; color: #0b0b0b; }
 
 /* 로고: 흰 배경 이미지라 다크 모드에서는 흰 판 위에 */
-.brand img { border-radius: 8px; }
-:root[data-theme="dark"] .brand img { background: #fff; padding: 4px 8px; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand img { background: #fff; padding: 4px 8px; } }
 
 @media (max-width: 520px) {
   .filters { padding: 12px; }
@@ -243,9 +239,63 @@ th { color: var(--text-2); font-weight: 600; position: sticky; top: 0; backgroun
 }
 @media (max-width: 520px) {
   .topbar-inner { align-items: flex-start; }
-  .brand { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .brand img { height: 40px; }
-  h1 { font-size: 1.2rem; }
-  .sub { font-size: .8rem; }
   .chart-box.tall.horizontal { height: 420px; }
+}
+
+/* ---------- 상단 헤더 ---------- */
+.topbar { border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border), 0 6px 18px -14px rgba(0,0,0,.35); }
+.topbar-inner { padding-top: 16px; padding-bottom: 16px; }
+.brand { gap: 18px; }
+.brand .logo { height: 50px; width: auto; flex-shrink: 0; display: block; }
+.logo-dark { display: none !important; }
+:root[data-theme="dark"] .logo-light { display: none !important; }
+:root[data-theme="dark"] .logo-dark { display: block !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-light { display: none !important; }
+  :root:not([data-theme="light"]) .logo-dark { display: block !important; }
+}
+.brand-divider { width: 1.5px; align-self: stretch; margin: 4px 0; background: var(--axis); }
+.brand-text { min-width: 0; }
+.brand-text h1 { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.meta-line { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 6px 0 0; font-size: .84rem; color: var(--text-2); }
+.meta { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 99px; background: var(--page); border: 1px solid var(--border); white-space: nowrap; }
+.meta b { color: var(--text); font-weight: 700; }
+.meta .tag { font-size: .7rem; padding: 1px 6px; }
+.theme-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 99px; border: 1.5px solid var(--axis); background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.theme-btn:hover { background: var(--accent-wash); border-color: var(--s1); }
+
+/* ---------- 알레르기 ---------- */
+.allergy { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--warn-bg); border: 1px solid rgba(250,178,25,.45); }
+.allergy-h { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
+.allergy-h .muted { font-weight: 500; }
+.alg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.alg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: .85rem; cursor: default; }
+.alg-chip b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 99px; background: #fab219; color: #0b0b0b; font-size: .74rem; }
+.alg-chip:hover, .alg-chip.on { border-color: #c98500; }
+.allergy-none { font-size: .85rem; color: var(--text-2); }
+.allergy-tip { font-size: .75rem; color: var(--muted); margin-top: 8px; }
+.menu-list .alg { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--border); font-size: .7rem; color: var(--text-2); vertical-align: 1px; }
+.menu-list li { transition: background .12s; border-radius: 6px; }
+.menu-list li.hit { background: var(--warn-bg); box-shadow: inset 3px 0 0 #fab219; padding-left: 8px; }
+
+/* ---------- 원산지 ---------- */
+.origin-sum { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 8px; font-size: .84rem; color: var(--text-2); }
+.origin-sum b { color: var(--text); }
+.origin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; max-height: 260px; overflow: auto; padding-right: 4px; }
+.og { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--page); border: 1px solid var(--border); font-size: .82rem; }
+.og .item { color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og .from { flex-shrink: 0; max-width: 55%; text-align: right; font-weight: 600; font-size: .76rem; padding: 1px 8px; border-radius: 99px; background: var(--accent-wash); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og.imp .from { background: var(--warn-bg); }
+
+@media (max-width: 520px) {
+  .topbar-inner { align-items: flex-start; }
+  .brand { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .brand .logo { height: 38px; }
+  .brand-divider { display: none; }
+  .brand-text h1 { font-size: 1.3rem; }
+  .meta-line { font-size: .76rem; }
+  .theme-btn { height: 36px; padding: 0 10px; }
+  #themeLabel { display: none; }
+  .meta.m-hide { display: none; }
+  .origin-grid { grid-template-columns: 1fr; }
 }

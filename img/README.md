@@ -8,3 +8,10 @@
 - 파일이 없으면 로고 없이 표시됩니다.
 
 올리는 방법: 이 폴더 화면에서 **Add file → Upload files** → 파일 끌어다 놓기 → **Commit changes**
+
+## 현재 사용 중인 파일
+- `logo.png`: 원본(흰 배경)
+- `logo-light.png`: 배경 투명 → 라이트 모드에 표시
+- `logo-dark.png`: 배경 투명 + 글자 밝은색 → 다크 모드에 표시
+
+로고를 교체할 때는 투명 배경 PNG 두 장(`logo-light.png`, `logo-dark.png`)을 같은 이름으로 올려 주세요.
