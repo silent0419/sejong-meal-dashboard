@@ -35,17 +35,21 @@
           <button type="button" role="radio" data-lv="고">고등</button>
         </div>
       </div>
-      <label>학교 검색
-        <input id="schoolSearch" type="search" placeholder="예: 도담, 고등" autocomplete="off">
+      <label class="field grow"><span class="flabel">학교 검색</span>
+        <span class="search">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="schoolSearch" type="search" placeholder="학교명 또는 동 이름 (예: 도담)" autocomplete="off">
+        </span>
       </label>
-      <label><span>학교 <span class="muted" id="schoolCount"></span></span>
+      <label class="field grow"><span class="flabel">학교 선택 <span class="count" id="schoolCount"></span></span>
         <select id="schoolSel"></select>
       </label>
-      <label>월
+      <label class="field"><span class="flabel">월</span>
         <select id="monthSel"></select>
       </label>
-      <div id="schoolInfo" class="school-info"></div>
     </section>
+
+    <section id="schoolInfo" class="school-hero" aria-label="선택한 학교 정보"></section>
 
     <p id="noData" class="card empty-note" hidden>이 학교는 아직 NEIS에 등록된 급식 자료가 없습니다.</p>
     <div id="dataArea">
@@ -64,7 +68,7 @@
         <h3 class="mini">기준량 대비 영양소</h3>
         <div id="dayNut" class="nut-bars"></div>
         <p class="foot muted" id="allergyNote"></p>
-        <details id="originBox"><summary>원산지 정보</summary><div id="originText" class="origin"></div></details>
+        <details id="originBox" class="btn-details"><summary>원산지 정보 보기</summary><div id="originText" class="origin"></div></details>
       </article>
     </section>
 
@@ -72,7 +76,7 @@
       <article class="card">
         <header class="card-h"><h2>일별 열량 <span class="src neis">NEIS</span></h2><span class="muted" id="kcalSub"></span></header>
         <div class="chart-box"><canvas id="kcalChart" aria-label="일별 열량 선 그래프" role="img"></canvas></div>
-        <details><summary>표로 보기</summary><div id="kcalTable" class="tbl-wrap"></div></details>
+        <details class="btn-details"><summary>표로 보기</summary><div id="kcalTable" class="tbl-wrap"></div></details>
       </article>
       <article class="card">
         <header class="card-h"><h2>월평균 영양소 <span class="src neis">NEIS</span></h2><span class="muted">기준량 = 100%</span></header>
@@ -86,11 +90,13 @@
       <article class="card">
         <header class="card-h"><h2>월별 잔반량 <span class="src virtual xsrc">가상</span></h2><span class="muted">1인 1끼 평균 (g)</span></header>
         <div class="chart-box"><canvas id="wasteChart" aria-label="월별 잔반량 막대 그래프" role="img"></canvas></div>
-        <details><summary>표로 보기</summary><div id="wasteTable" class="tbl-wrap"></div></details>
+        <details class="btn-details"><summary>표로 보기</summary><div id="wasteTable" class="tbl-wrap"></div></details>
       </article>
       <article class="card">
-        <header class="card-h"><h2>선호메뉴 TOP 5 <span class="src virtual xsrc">가상</span></h2><span class="muted" id="prefSub"></span></header>
+        <header class="card-h"><h2>선호메뉴 TOP 10 <span class="src virtual xsrc">가상</span></h2><span class="muted" id="prefSub"></span></header>
         <ol id="prefList" class="pref-list"></ol>
+        <p class="pref-sep" aria-hidden="true"><span>6~10위</span></p>
+        <ol id="prefList2" class="pref-list sub" start="6"></ol>
       </article>
     </section>
 
@@ -103,10 +109,9 @@
 
     </div>
 
-    <footer class="page-foot muted">
-      학교 정보·식단·열량·영양소: <a href="https://open.neis.go.kr" target="_blank" rel="noopener">NEIS 교육정보 개방 포털</a> (매일 자동 갱신).<br>
-      <span class="src virtual">가상</span> 표시가 있는 잔반량·선호메뉴는 NEIS에서 제공하지 않아 시연용으로 만든 값이며, 학교 실측 자료로 교체할 수 있습니다.
-      영양 기준량은 학교급식 영양관리기준을 단순화한 참고값입니다.
+    <footer class="page-foot">
+      <p><strong class="tag neis">NEIS</strong> <a href="https://open.neis.go.kr" target="_blank" rel="noopener">교육정보 개방 포털</a> 실제 자료(학교 정보·식단·열량·영양소, 매일 자동 갱신)
+      <span class="dot">·</span> <strong class="tag virtual">가상</strong> NEIS 미제공 항목(잔반량·선호메뉴)의 시연용 값</p>
     </footer>
   </main>
 

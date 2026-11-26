@@ -73,6 +73,11 @@
     }));
     $("#monthSel").addEventListener("change", (e) => { state.month = e.target.value; state.day = null; renderMonth(); });
     $("#themeBtn").addEventListener("click", toggleTheme);
+    let wasNarrow = window.innerWidth < 600;
+    window.addEventListener("resize", () => {
+      const n = window.innerWidth < 600;
+      if (n !== wasNarrow && state.school) { wasNarrow = n; renderCompare(); }
+    });
 
     const urlId = new URLSearchParams(location.search).get("school");
     const startId = [urlId, store.get("school")].find((id) => state.schools.some((s) => s.id === id)) || state.schools[0].id;
@@ -106,9 +111,22 @@
     state.day = null;
 
     const s = state.school;
-    const home = s.homepage ? ` · <a href="${esc(s.homepage)}" target="_blank" rel="noopener">홈페이지</a>` : "";
-    $("#schoolInfo").innerHTML = `<strong>${esc(s.name)}</strong> · ${esc(s.address)} · ${esc(s.found)} · ${esc(s.coedu)}` +
-      ` · 하루 평균 급식 ${fmt(s.avgServed)}명${home}`;
+    const homeUrl = s.homepage ? (/^https?:\/\//i.test(s.homepage) ? s.homepage : "http://" + s.homepage) : "";
+    const chips = [
+      `📍 ${esc(s.address)}`,
+      s.found && `🏫 ${esc(s.found)}`,
+      s.coedu && `👥 ${esc(s.coedu)}`,
+      s.avgServed && `🍚 하루 평균 급식 <b>${fmt(s.avgServed)}명</b>`,
+    ].filter(Boolean).map((c) => `<span class="chip">${c}</span>`).join("");
+    $("#schoolInfo").innerHTML = `
+      <div>
+        <div class="hero-title"><span class="lv-chip">${LEVEL_NAME[s.level]}</span><h2>${esc(s.name)}</h2></div>
+        <div class="chips">${chips}</div>
+      </div>
+      <div class="hero-actions">
+        ${homeUrl ? `<a class="btn primary" href="${esc(homeUrl)}" target="_blank" rel="noopener">🏠 학교 홈페이지 <span aria-hidden="true">↗</span></a>` : ""}
+        ${s.tel ? `<a class="btn outline" href="tel:${esc(s.tel.replace(/[^0-9]/g, ""))}">📞 ${esc(s.tel)}</a>` : ""}
+      </div>`;
     document.querySelectorAll(".xsrc").forEach((el) => { el.outerHTML = xBadge().replace('class="src', 'class="xsrc src'); });
     if (!hasData) { $("#monthSel").innerHTML = "<option>자료 없음</option>"; return; }
     renderMonth();
@@ -321,28 +339,40 @@
   function renderPrefs() {
     const pr = state.school.preference, max = pr.top[0]?.votes || 1;
     $("#prefSub").textContent = `${pr.surveyDate} 설문 · 응답 ${fmt(pr.respondents)}명 · 복수응답`;
-    $("#prefList").innerHTML = pr.top.slice(0, 5).map((t) => `<li title="${esc(t.menu)}: ${fmt(t.votes)}표 (${fmt(t.share, 1)}%)">
+    const row = (t) => `<li title="${esc(t.menu)}: ${fmt(t.votes)}표 (${fmt(t.share, 1)}%)">
       <span class="rk">${t.rank}</span><span class="pm">${esc(t.menu)}</span>
       <span class="track"><span class="fill" style="width:${t.votes / max * 100}%"></span></span>
-      <span class="num">${fmt(t.votes)}표</span></li>`).join("");
+      <span class="num">${fmt(t.votes)}표</span></li>`;
+    $("#prefList").innerHTML = pr.top.slice(0, 5).map(row).join("");
+    $("#prefList2").innerHTML = pr.top.slice(5, 10).map(row).join("");
+    $(".pref-sep").hidden = pr.top.length <= 5;
   }
 
   function renderCompare() {
     const me = state.school, lv = me.level;
     const meIdx = state.schools.find((s) => s.id === me.id);
-    // 같은 학교급에서 하루 평균 급식인원이 가장 가까운 9곳 + 선택 학교
+    // 같은 학교급에서 하루 평균 급식인원이 가장 가까운 10곳 + 선택 학교
     const peers = state.schools.filter((s) => s.level === lv && s.id !== me.id && s.avgWastePerPersonG != null && s.avgServed)
-      .sort((a, b) => Math.abs(a.avgServed - me.avgServed) - Math.abs(b.avgServed - me.avgServed)).slice(0, 9);
+      .sort((a, b) => Math.abs(a.avgServed - me.avgServed) - Math.abs(b.avgServed - me.avgServed)).slice(0, 10);
     const list = [meIdx, ...peers].filter((s) => s && s.avgWastePerPersonG != null)
       .sort((a, b) => a.avgWastePerPersonG - b.avgWastePerPersonG);
     const served = peers.map((s) => s.avgServed);
     $("#compareTitle").textContent = `규모가 비슷한 ${LEVEL_NAME[lv]} ${peers.length}곳과 잔반량 비교`;
     $("#compareSub").textContent = served.length ? `기준: 하루 평균 급식인원 (이 학교 ${fmt(me.avgServed)}명 · 비교 학교 ${fmt(Math.min(...served))}~${fmt(Math.max(...served))}명) · 학년도 누적 1인 1끼 평균 (g)` : "";
     const rank = list.findIndex((s) => s.id === me.id) + 1;
-    $("#compareSub").textContent += ` · 10곳 중 잔반 적은 순 ${rank}위`;
+    $("#compareSub").textContent += ` · ${list.length}곳 중 잔반 적은 순 ${rank}위`;
     const opts = baseOpts();
-    opts.scales.x.ticks.autoSkip = false;
-    opts.scales.x.ticks.maxRotation = 45;
+    const narrow = window.innerWidth < 600;   // 모바일: 가로 막대로 표시
+    document.getElementById("compareChart").parentElement.classList.toggle("horizontal", narrow);
+    if (narrow) {
+      opts.indexAxis = "y";
+      opts.scales = { x: opts.scales.y, y: opts.scales.x };
+      opts.scales.y.ticks.autoSkip = false;
+      opts.scales.y.ticks.font = { size: 11 };
+    } else {
+      opts.scales.x.ticks.autoSkip = false;
+      opts.scales.x.ticks.maxRotation = 45;
+    }
     opts.plugins.tooltip.callbacks = {
       title: (i) => list[i[0].dataIndex].name,
       label: (c) => `1인 1끼 평균 잔반 ${fmt(c.raw, 1)} g`,
@@ -352,11 +382,12 @@
     opts.onHover = (e, el) => { e.native.target.style.cursor = el.length ? "pointer" : "default"; };
     draw("compareChart", {
       type: "bar",
-      data: { labels: list.map((s) => [shortName(s.name), `${fmt(s.avgServed)}명`]),
+      data: { labels: list.map((s) => narrow ? `${shortName(s.name)} (${fmt(s.avgServed)}명)` : [shortName(s.name), `${fmt(s.avgServed)}명`]),
         datasets: [{ data: list.map((s) => s.avgWastePerPersonG),
           backgroundColor: list.map((s) => s.id === state.school.id ? css("--s1") : css("--other")),
           hoverBackgroundColor: css("--s1"),
-          borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 48 }] },
+          borderRadius: narrow ? { topRight: 4, bottomRight: 4 } : { topLeft: 4, topRight: 4 },
+          borderSkipped: narrow ? "left" : "bottom", maxBarThickness: 48 }] },
       options: opts,
     });
   }

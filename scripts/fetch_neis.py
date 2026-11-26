@@ -176,7 +176,7 @@ def virtual_extra(code, level, meals):
     avg_served = round(sum(m.get("served") or 0 for m in meals.values()) / max(len(meals), 1))
     respondents = int(avg_served * rnd.uniform(0.55, 0.8))
     tot = sum(weights.values()) or 1
-    top = sorted(weights.items(), key=lambda x: -x[1])[:5]
+    top = sorted(weights.items(), key=lambda x: -x[1])[:10]
     prefs = [{"rank": i + 1, "menu": n, "votes": round(w / tot * respondents * 2.2), "share": round(w / tot * 220, 1)}
              for i, (n, w) in enumerate(top)]
     return waste, {"surveyDate": "2026-10-15", "respondents": respondents,
