@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27 12:42",
+ "updated": "2026-11-28 12:23",
  "schoolYear": 2026,
  "source": "NEIS 교육정보 개방 포털 (학교기본정보, 급식식단정보)",
  "schools": [
@@ -167,8 +167,8 @@
    "coedu": "남여공학",
    "homepage": "http://dajeong.sjedues.kr/",
    "tel": "044-902-3800",
-   "avgServed": 1292,
-   "mealDays": 166,
+   "avgServed": 1280,
+   "mealDays": 188,
    "avgWastePerPersonG": 88.8
   },
   {
@@ -251,8 +251,8 @@
    "coedu": "남여공학",
    "homepage": "http://bangok.sjedues.kr",
    "tel": "044-410-6000",
-   "avgServed": 1035,
-   "mealDays": 172,
+   "avgServed": 1034,
+   "mealDays": 190,
    "avgWastePerPersonG": 92.4
   },
   {
@@ -685,8 +685,8 @@
    "coedu": "남여공학",
    "homepage": "jcwsb.sjedues.kr",
    "tel": "044-902-1400",
-   "avgServed": 356,
-   "mealDays": 167,
+   "avgServed": 357,
+   "mealDays": 190,
    "avgWastePerPersonG": 80.2
   },
   {
@@ -881,8 +881,8 @@
    "coedu": "남여공학",
    "homepage": "http://bangok.sjedums.kr/",
    "tel": "044-410-3600",
-   "avgServed": 566,
-   "mealDays": 164,
+   "avgServed": 567,
+   "mealDays": 186,
    "avgWastePerPersonG": 120.9
   },
   {
@@ -1148,7 +1148,7 @@
    "homepage": "http://sjhansol.sjedums.kr",
    "tel": "044-868-1731",
    "avgServed": 838,
-   "mealDays": 165,
+   "mealDays": 169,
    "avgWastePerPersonG": 126.5
   },
   {
@@ -1203,8 +1203,8 @@
    "coedu": "남여공학",
    "homepage": "http://dodam.sjeduhs.kr",
    "tel": "044-410-0303",
-   "avgServed": 610,
-   "mealDays": 164,
+   "avgServed": 597,
+   "mealDays": 186,
    "avgWastePerPersonG": 128.2
   },
   {
@@ -1343,8 +1343,8 @@
    "coedu": "여",
    "homepage": "http://sjghs.sjeduhs.kr",
    "tel": "044-862-1083",
-   "avgServed": 642,
-   "mealDays": 163,
+   "avgServed": 641,
+   "mealDays": 185,
    "avgWastePerPersonG": 106.6
   },
   {
@@ -1455,8 +1455,8 @@
    "coedu": "남여공학",
    "homepage": "http://sjhansol.sjeduhs.kr/",
    "tel": "044-410-4111",
-   "avgServed": 700,
-   "mealDays": 165,
+   "avgServed": 696,
+   "mealDays": 187,
    "avgWastePerPersonG": 131.6
   },
   {
